@@ -10,6 +10,12 @@ public class BotService {
     private GameObject bot;
     private PlayerAction playerAction;
     private GameState gameState;
+    private GameObject target;
+    private GameObject teleporter;
+    // ADD MORE CONST IF ANY
+    final int PLAYER_RADIUS = 800;
+    final int SAFETY_NUM = 20;
+    final int TELEPORT_COST = 20;
 
     public BotService() {
         this.playerAction = new PlayerAction();
@@ -36,17 +42,63 @@ public class BotService {
     public void computeNextPlayerAction(PlayerAction playerAction) {
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = new Random().nextInt(360);
-
+        
+        
         if (!gameState.getGameObjects().isEmpty()) {
-            System.out.printf("eat eat size: %d",bot.getSize());
-            var foodList = gameState.getGameObjects()
-                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
-                    .sorted(Comparator
-                            .comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
 
-            playerAction.heading = getHeadingBetween(foodList.get(0));
-        }
+            if (getDistanceBoundary() <= 0) {
+                System.out.println("WARNING: OUT OF BOUNDS\n");
+            }
+            System.out.printf("SIZE: %d\n", bot.size);
+            System.out.printf("TELEPORT COUNT: %d\n", bot.teleporterCount);
+
+            var teleporterList = getTeleporter();
+            // TELEPORT
+            if (!teleporterList.isEmpty()) {
+                this.teleporter = teleporterList.get(0);
+                if (computeTeleport()) {
+                    /* NOTHING */
+                } else {
+                    computeFoodTarget();
+                }
+            } else {
+
+                // TODO: PLAYER LIST USE GIVEN RADIUS
+                var playerList = gameState.getPlayerGameObjects()
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER)
+                .sorted(Comparator
+                        .comparing(item -> getDistanceBetween(bot, item)))
+                .collect(Collectors.toList());
+
+                System.out.println(playerList.size());
+                
+                if (!playerList.isEmpty()) {
+                    System.out.println("Detected players inside range\n");
+                    System.out.println("COMPUTE OFFENSE\n");
+                    var i = 0;
+                    while (i < playerList.size()) {
+                        target = playerList.get(i);
+                        if (computeOffense()) {
+                            // FOUND NEW TARGET FOR OFFENSE
+                            break;
+                        } 
+    
+                        if (i == playerList.size() - 1) {
+                            System.out.println("No target available...setting to null...\n");
+                            target = null;
+                        }
+                        i++;
+                    }
+                }
+                
+                // NO TARGET
+                if (target == null) {
+                    // System.out.printf("eat eat size: %d\n",bot.getSize());
+                   computeFoodTarget();
+                }
+    
+                }
+            }
 
         this.playerAction = playerAction;
     }
@@ -60,6 +112,99 @@ public class BotService {
         updateSelfState();
     }
 
+    private List<GameObject> getTeleporter() {
+        var teleporter =  gameState.getGameObjects()
+        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER)
+        .collect(Collectors.toList());
+
+        if (!teleporter.isEmpty()) {
+            System.out.println("Found teleporter\n");
+            for (int i =0; i < teleporter.size();i++) {
+                System.out.printf("%s\n", teleporter.get(i).getId());
+            }
+
+            return teleporter;
+        }
+
+        return teleporter;
+    }
+
+    private boolean computeTeleport() {
+        if (this.target == null) {
+            System.out.println("TARGET IS NULL\n");
+        }
+        if (this.target != null && this.teleporter != null) {
+            System.out.printf("DISTANCE TELEPORTER FROM TARGET: %d\n", (int) getDistanceBetween(target, teleporter));
+            if ((int) getDistanceBetween(target, teleporter) <= 20) {
+                System.out.println("Teleporting...\n");
+                playerAction.action = PlayerActions.TELEPORT;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    private boolean computeOffense() { 
+        // TODO: Manual Offense (chasing)       
+        if (bot.teleporterCount > 0 && target.getSize() < bot.getSize() - TELEPORT_COST - SAFETY_NUM) {
+            System.out.printf("Target is %s\n", target.getId());
+            playerAction.action = PlayerActions.FIRETELEPORT;
+            playerAction.heading = getHeadingBetween(target);
+            return true;
+        }
+        System.out.printf("ID: %s TOO BIG SIZE: %d\n",  target.getId(), target.getSize());
+        return false;
+    }
+
+    /*
+     * compute the next food target
+     */
+    private void computeFoodTarget() {
+        // TODO: confirm the target is safe from gas cloud or other player
+        System.out.println("Waiting for teleporter...\n");
+        var foodList = gameState.getGameObjects()
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
+                .sorted(Comparator
+                        .comparing(item -> getDistanceBetween(bot, item)))
+                .collect(Collectors.toList());
+
+        playerAction.heading = getHeadingBetween(foodList.get(0));
+    }
+
+    /**
+     * 
+     * @param radius
+     * @return List of game objects within radius
+     */
+    private List<GameObject> getObjectsWithin(int radius) {
+        // TODO: Use this in main func
+        System.out.println("GET OBJECT WITHIN\n");
+        var objList = gameState.getGameObjects()
+        .stream().filter(item -> getOuterDistanceBetween(bot, item) <= PLAYER_RADIUS)
+        .collect(Collectors.toList());
+
+        return objList;
+    }
+
+    /**
+     * 
+     * @param radius
+     * @return List of players within radius
+     */
+    private List<GameObject> getPlayersWithin(int radius) {
+        System.out.println("GET OBJECT WITHIN\n");
+        var objList = gameState.getPlayerGameObjects()
+        .stream().filter(item -> getOuterDistanceBetween(bot, item) <= PLAYER_RADIUS)
+        .collect(Collectors.toList());
+
+        return objList;
+    }
+
     private void updateSelfState() {
         Optional<GameObject> optionalBot = gameState.getPlayerGameObjects().stream().filter(gameObject -> gameObject.id.equals(bot.id)).findAny();
         optionalBot.ifPresent(bot -> this.bot = bot);
@@ -71,10 +216,31 @@ public class BotService {
         return Math.sqrt(triangleX * triangleX + triangleY * triangleY);
     }
 
+    /**
+     * 
+     * @param object1
+     * @param object2
+     * @return Jarak object1 dan object2 dari sisi terluar
+     */
+    private double getOuterDistanceBetween(GameObject object1, GameObject object2) {
+        return getDistanceBetween(object1, object2) - object1.getSize() - object2.getSize();
+    }
+
     private int getHeadingBetween(GameObject otherObject) {
         var direction = toDegrees(Math.atan2(otherObject.getPosition().y - bot.getPosition().y,
                 otherObject.getPosition().x - bot.getPosition().x));
         return (direction + 360) % 360;
+    }
+ 
+    private int getDistanceBoundary() {
+        var distanceFromOrigin = (int) Math.ceil(Math.sqrt(Math.pow(bot.getPosition().x, 2) + Math.pow(bot.getPosition().y, 2)));
+
+        if (gameState.world.getRadius() != null) {
+
+            return gameState.world.getRadius() - distanceFromOrigin;
+        } 
+
+        return 123;
     }
 
     private int toDegrees(double v) {
