@@ -246,6 +246,29 @@ public class BotService {
     private int toDegrees(double v) {
         return (int) (v * (180 / Math.PI));
     }
+    
+    private double getDistanceBetween(GameObject go)
+    {
+        return getDistanceBetween(bot, go);
+    }
 
+    private int getOppositeDirection(GameObject gameObject1, GameObject gameObject2)
+    {
+        return toDegrees(Math.atan2(gameObject2.position.y - gameObject1.position.y, gameObject2.position.x - gameObject1.position.y));
+    }
 
+    private double runFromAtt(GameObject bot, GameObject atkr) 
+    {
+        var distAtkr = getDistanceBetween(atkr);
+        if (distAtkr <= atkr.speed) {
+            return getOppositeDirection(bot, atkr);
+        }
+    }
+
+    private double dodgeObj(GameObject bot, GameObject obj)
+    {
+        return getOppositeDirection(bot, obj) + 90;
+    }
+
+    
 }
