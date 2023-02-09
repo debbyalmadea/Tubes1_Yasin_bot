@@ -65,12 +65,12 @@ public class BotService {
 
                 // TODO: PLAYER LIST USE GIVEN RADIUS
                 var playerList = gameState.getPlayerGameObjects()
-                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER)
-                .sorted(Comparator
-                        .comparing(item -> getDistanceBetween(bot, item)))
-                .collect(Collectors.toList());
+                                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER)
+                                .sorted(Comparator
+                                        .comparing(item -> getDistanceBetween(bot, item)))
+                                .collect(Collectors.toList());
 
-                System.out.println(playerList.size());
+                // System.out.println(playerList.size());
                 
                 if (!playerList.isEmpty()) {
                     System.out.println("Detected players inside range\n");
@@ -112,6 +112,10 @@ public class BotService {
         updateSelfState();
     }
 
+    /**
+     * 
+     * @return List dari object teleporter di dalam map
+     */
     private List<GameObject> getTeleporter() {
         var teleporter =  gameState.getGameObjects()
         .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER)
@@ -129,11 +133,16 @@ public class BotService {
         return teleporter;
     }
 
+    /**
+     * 
+     * @return true jika sudah waktunya untuk melakukan teleport
+     */
     private boolean computeTeleport() {
         if (this.target == null) {
             System.out.println("TARGET IS NULL\n");
         }
         if (this.target != null && this.teleporter != null) {
+            // TODO: mengecek kembali size dari target apakah masih memungkinkan atau tidak
             System.out.printf("DISTANCE TELEPORTER FROM TARGET: %d\n", (int) getDistanceBetween(target, teleporter));
             if ((int) getDistanceBetween(target, teleporter) <= 20) {
                 System.out.println("Teleporting...\n");
@@ -147,7 +156,7 @@ public class BotService {
 
     /**
      * 
-     * @return
+     * @return true jika terdapat bot lain yang bisa dimakan
      */
     private boolean computeOffense() { 
         // TODO: Manual Offense (chasing)       
@@ -162,7 +171,7 @@ public class BotService {
     }
 
     /*
-     * compute the next food target
+     * mencari target makanan selanjutnya
      */
     private void computeFoodTarget() {
         // TODO: confirm the target is safe from gas cloud or other player
@@ -179,7 +188,7 @@ public class BotService {
     /**
      * 
      * @param radius
-     * @return List of game objects within radius
+     * @return List dari game objects yang ada di dalam radius
      */
     private List<GameObject> getObjectsWithin(int radius) {
         // TODO: Use this in main func
@@ -194,7 +203,7 @@ public class BotService {
     /**
      * 
      * @param radius
-     * @return List of players within radius
+     * @return List dari player yang ada di dalam radius
      */
     private List<GameObject> getPlayersWithin(int radius) {
         System.out.println("GET OBJECT WITHIN\n");
