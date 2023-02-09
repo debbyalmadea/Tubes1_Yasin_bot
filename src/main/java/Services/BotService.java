@@ -272,6 +272,10 @@ public class BotService {
         if (distAtkr <= atkr.speed) {
             return getOppositeDirection(bot, atkr);
         }
+
+        // TODO: Change this return value 
+        // arbitary biar ga dpt err message
+        return -1.0;
     }
 
     private double dodgeObj(GameObject bot, GameObject obj)
