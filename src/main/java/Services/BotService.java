@@ -13,9 +13,11 @@ public class BotService {
     private GameObject target;
     private GameObject teleporter;
     // ADD MORE CONST IF ANY
-    final int PLAYER_RADIUS = 800;
     final int SAFETY_NUM = 20;
     final int TELEPORT_COST = 20;
+    final int PLAYER_RADIUS = 800;
+    final int SUPERNOVA_RADIUS = 50;
+    final int SUPERFOOD_RADIUS = 50;
 
     public BotService() {
         this.playerAction = new PlayerAction();
@@ -194,7 +196,7 @@ public class BotService {
         // TODO: Use this in main func
         System.out.println("GET OBJECT WITHIN\n");
         var objList = gameState.getGameObjects()
-        .stream().filter(item -> getOuterDistanceBetween(bot, item) <= PLAYER_RADIUS)
+        .stream().filter(item -> getOuterDistanceBetween(bot, item) <= radius)
         .collect(Collectors.toList());
 
         return objList;
@@ -208,10 +210,26 @@ public class BotService {
     private List<GameObject> getPlayersWithin(int radius) {
         System.out.println("GET OBJECT WITHIN\n");
         var objList = gameState.getPlayerGameObjects()
-        .stream().filter(item -> getOuterDistanceBetween(bot, item) <= PLAYER_RADIUS)
+        .stream().filter(item -> getOuterDistanceBetween(bot, item) <= radius)
         .collect(Collectors.toList());
 
         return objList;
+    }
+
+    private List<GameObject> cekSupernovaAvailable(List<GameObject> objList) {
+        System.out.println("Cek Supernova...\n");
+        var hasil = objList.stream()
+        .filter(item -> item.getGameObjectType() == ObjectTypes.SUPERNOVAPICKUP)
+        .collect(Collectors.toList());
+        return hasil;
+    } 
+
+    private List<GameObject> getSuperfood(List<GameObject> object) {
+        System.out.println("Cek Superfood...\n");
+        var hasil = object.stream()
+        .filter(item -> item.getGameObjectType() == ObjectTypes.SUPERFOOD)
+        .collect(Collectors.toList());
+        return hasil;
     }
 
     private void updateSelfState() {
