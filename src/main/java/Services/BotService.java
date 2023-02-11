@@ -290,24 +290,22 @@ public class BotService {
         var headingAtkr = atkr.currentHeading;
         if (distAtkr <= atkr.speed && headingAtkr == getOppositeDirection(bot, atkr)) {
             return getOppositeDirection(bot, atkr);
+        } else {
+            return bot.currentHeading;
         }
         
-        // TODO: Change this return value 
-        // arbitary biar ga dpt err message
-        return -1.0;
     }
 
     private double dodgeObj(GameObject bot, GameObject obj)
     {
         var headingObj = obj.currentHeading;
-        if (headingObj>= ((getOppositeDirection(bot, obj)-60) %360)) {
-            return (getOppositeDirection(bot, obj) + 90) % 360;
-        } else if (headingObj < ((getOppositeDirection(bot, obj)+60) %360)) {
-            return (getOppositeDirection(bot, obj)-90) %360;
+        if ((headingObj-getOppositeDirection(bot, obj)%360>=0 && headingObj-getOppositeDirection(bot, obj)%360<60)) {
+            return (getOppositeDirection(bot, obj) - 90) % 360;
+        } else if ((headingObj-getOppositeDirection(bot, obj)%360<0 && headingObj-getOppositeDirection(bot, obj)%360>-60)) {
+            return (getOppositeDirection(bot, obj)+90) %360;
         } else {
-            return bot.currentHeading
+            return bot.currentHeading;
         }
-
     }
 
     
