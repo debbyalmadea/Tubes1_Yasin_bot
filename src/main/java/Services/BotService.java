@@ -287,10 +287,11 @@ public class BotService {
     private double runFromAtt(GameObject bot, GameObject atkr) 
     {
         var distAtkr = getDistanceBetween(atkr);
-        if (distAtkr <= atkr.speed) {
+        var headingAtkr = atkr.currentHeading;
+        if (distAtkr <= atkr.speed && headingAtkr == getOppositeDirection(bot, atkr)) {
             return getOppositeDirection(bot, atkr);
         }
-
+        
         // TODO: Change this return value 
         // arbitary biar ga dpt err message
         return -1.0;
@@ -298,7 +299,15 @@ public class BotService {
 
     private double dodgeObj(GameObject bot, GameObject obj)
     {
-        return getOppositeDirection(bot, obj) + 90;
+        var headingObj = obj.currentHeading;
+        if (headingObj>= ((getOppositeDirection(bot, obj)-60) %360)) {
+            return (getOppositeDirection(bot, obj) + 90) % 360;
+        } else if (headingObj < ((getOppositeDirection(bot, obj)+60) %360)) {
+            return (getOppositeDirection(bot, obj)-90) %360;
+        } else {
+            return bot.currentHeading
+        }
+
     }
 
     
