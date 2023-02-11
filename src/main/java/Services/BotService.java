@@ -19,6 +19,8 @@ public class BotService {
     final int SUPERNOVA_RADIUS = 50;
     final int SUPERFOOD_RADIUS = 50;
     final int SUPERNOVABOMB_RADIUS = 200;
+    final int TORPEDO_RADIUS = 400;
+    final int AVOID_TORPEDO_RADIUS = 200;
     final int GASCLOUD_RADIUS = 10;
     final int BOUNDRY_RADIUS = 10;
     final int ASTEROID_RADIUS = 5;
@@ -89,6 +91,15 @@ public class BotService {
                         }
                 }
             } else {
+                List<GameObject> torpedoes = getObjectsWithin(AVOID_TORPEDO_RADIUS, ObjectTypes.TORPEDOSALVO)
+                                            .stream().filter(item->isObjHeadingUs(bot, item))
+                                            .sorted(Comparator.comparing(item->getDistanceBetween(item)))
+                                            .toList();
+                if (!torpedoes.isEmpty()) {
+                    dodgeObj(bot, torpedoes.get(0));
+                    return true;
+                }
+
                 var isOffensePossible = computeOffense();
                 if (!isOffensePossible) {
                    if (!superbombList.isEmpty()) {
@@ -103,8 +114,7 @@ public class BotService {
                        //lain
                        var isAbleToFireTorpedoes = fireTorpedoSalvo();
                        if (!isAbleToFireTorpedoes) {
-                        goToFood();
-    
+                            goToFood();
                        }
                    }
                 }
@@ -127,12 +137,13 @@ public class BotService {
 
     private void moveToCenter() {
         Position position = new Position(0, 0);
-        GameObject worldCenter = new GameObject(UUID.fromString("world_center"), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
+        GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
 
         playerAction.setAction(PlayerActions.FORWARD);
         playerAction.setHeading(getHeadingBetween(worldCenter));
     }
 
+    // TELEPORT MECHANISM
     private GameObject getNearestTeleporter() {
         var teleporter =  gameState.getGameObjects()
                             .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER)
@@ -140,8 +151,6 @@ public class BotService {
                             .collect(Collectors.toList());
 
         if (!teleporter.isEmpty()) {
-            // System.out.println("Found teleporter\n");
-
             return teleporter.get(0);
         }
 
@@ -158,18 +167,14 @@ public class BotService {
         if (teleporterList.size() == 0) {
             // System.out.println("No teleport fired.");
         } else {
-            // for (int i = 0; i < teleporterList.size(); i++) {
-            //     System.out.printf("TELEPORTER %d HEADING %d HEADING BETWEEN %d\n", i, teleporterList.get(i).currentHeading, getHeadingBetween(teleporterList.get(i)));
-            // }
             this.firedTeleporter = teleporterList.get(0);
-            // System.out.printf("Teleport fired...\n");
         }
     }
 
     private boolean isTeleporterStillAvailable() {
         var teleporterList = gameState.getGameObjects()
                             .stream().filter(item -> item.getId().equals(firedTeleporter.getId()))
-                            .toList();
+                            .collect(Collectors.toList());
         
         if (teleporterList.isEmpty()) {
             System.out.println("TELEPORTER EXISTED");
@@ -209,22 +214,6 @@ public class BotService {
         }
     }
 
-    private boolean fireTorpedoSalvo() {
-        if (bot.getSize() < TORPEDO_COST * 5) {
-            return false;
-        }
-
-        var playerList = gameState.getPlayerGameObjects()
-                            .stream().filter(item->item.getGameObjectType() == ObjectTypes.PLAYER)
-                            .sorted(Comparator.comparing(item -> getOuterDistanceBetween(item, bot)))
-                            .toList();
-
-        playerAction.setAction(PlayerActions.FIRETORPEDOES);
-        playerAction.setHeading(getHeadingBetween(playerList.get(0)));
-        System.out.printf("Fired torpedoeeeees...\n");
-        return true;
-    }
-
     /**
      * 
      * @return true jika terdapat bot lain yang bisa dimakan
@@ -238,7 +227,7 @@ public class BotService {
                         .stream().sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                         .toList();
         if (playerList.size() > 0 && bot.teleporterCount > 0) {
-            for (int i =0; i < playerList.size();i++) {
+            for (int i =1; i < playerList.size();i++) {
                 var currTarget = playerList.get(i);
                 if (currTarget.getSize() < bot.getSize() - TELEPORT_COST - SAFETY_NUM) {
                     System.out.printf("Target is %s\n", currTarget.getId());
@@ -252,6 +241,28 @@ public class BotService {
         }
         // System.out.printf("ID: %s TOO BIG SIZE: %d\n",  target.getId(), target.getSize());
         return false;
+    }
+
+    // ATTACK MECHANISM
+
+    private boolean fireTorpedoSalvo() {
+        if (bot.getSize() < TORPEDO_COST * 5) {
+            return false;
+        }
+
+        var playerList = gameState.getPlayerGameObjects()
+                            .stream().sorted(Comparator.comparing(item -> getDistanceBetween(item)))
+                            .collect(Collectors.toList());
+
+        if (playerList.isEmpty()) {
+            return false;
+        }
+
+        int heading = getHeadingBetween(playerList.get(1));
+        playerAction.action = PlayerActions.FIRETORPEDOES;
+        playerAction.heading = heading;
+        System.out.printf("Fired torpedoeeeees...\n");
+        return true;
     }
 
     private void goToFood() {
@@ -343,6 +354,10 @@ public class BotService {
         .collect(Collectors.toList());
 
         return objList;
+    }
+
+    private List<GameObject> getObjectsWithin(int radius, ObjectTypes type) {
+        return getObjectsWithin(radius).stream().filter(item->item.getGameObjectType() == type).collect(Collectors.toList());
     }
 
     /**
