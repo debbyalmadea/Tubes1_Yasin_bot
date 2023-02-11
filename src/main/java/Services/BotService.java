@@ -69,37 +69,29 @@ public class BotService {
                 if (nearestTeleporter != null && isObjHeadingUs(bot, nearestTeleporter))  {
                     playerAction.action = PlayerActions.FORWARD;
                     playerAction.heading = dodgeObj(bot, nearestTeleporter);
-                }
-                
-                else{
-                    if( isTeleporterNearSmallerEnemy()) {
-                    playerAction.setAction(PlayerActions.TELEPORT);
-                    this.firedTeleporter = null;
                 } else {
-                    var cekSuperfood = getSuperfood(getObjectsWithin(SUPERFOOD_RADIUS));
-                    if (!cekSuperfood) {
-                        var status = computeFoodTarget();
-                        if (!status) {
-                            
-                        }
-                       }  
+                    if( isTeleporterNearSmallerEnemy()) {
+                        playerAction.setAction(PlayerActions.TELEPORT);
+                        this.firedTeleporter = null;
+                    } else {
+                        goToFood();
                     }
                 }
             } else {
                 var isOffensePossible = computeOffense();
                 if (!isOffensePossible) {
                     System.out.printf("eat eat size: %d\n",bot.getSize());
-                   if (!superbombList.isEmpty()) {
-                       this.superbomb = superbombList.get(0);
-                       if (isObjHeadingUs(bot, superbomb)) {
-                           dodgeObj(bot, superbomb);
-                       } else {
-                           computeFoodTarget();
-                       }
-                   }
-                   else {
-                       //lain
-                   }
+                    if (!superbombList.isEmpty()) {
+                        this.superbomb = superbombList.get(0);
+                        if (isObjHeadingUs(bot, superbomb)) {
+                            dodgeObj(bot, superbomb);
+                        } else {
+                            goToFood();
+                        }
+                    }
+                    else {
+                        goToFood();
+                    }
                 }
             } 
         } 
@@ -212,6 +204,16 @@ public class BotService {
         }
         // System.out.printf("ID: %s TOO BIG SIZE: %d\n",  target.getId(), target.getSize());
         return false;
+    }
+
+    private void goToFood() {
+        var cekSuperfood = getSuperfood(getObjectsWithin(SUPERFOOD_RADIUS));
+        if (!cekSuperfood) {
+            var status = computeFoodTarget();
+            if (!status) {
+                // NANTI ISI ACTION PALING TERAKHIR
+            }
+        }
     }
 
     /*
