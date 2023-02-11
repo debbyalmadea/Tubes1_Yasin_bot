@@ -19,7 +19,8 @@ public class BotService {
     final int PLAYER_RADIUS = 800;
     final int SUPERNOVA_RADIUS = 50;
     final int SUPERFOOD_RADIUS = 50;
-    final int SUPERNOVABOMB_RADIUS = 200;    final int GASCLOUD_RADIUS = 10;
+    final int SUPERNOVABOMB_RADIUS = 200;
+    final int GASCLOUD_RADIUS = 10;
     final int BOUNDRY_RADIUS = 10;
     final int ASTEROID_RADIUS = 5;
 
@@ -66,9 +67,12 @@ public class BotService {
                 if (computeTeleport()) {
                     /* NOTHING */
                 } else {
-                    var status = computeFoodTarget();
-                    if (!status) {
-                        
+                    var cekSuperfood = getSuperfood(getObjectsWithin(SUPERFOOD_RADIUS));
+                    if (!cekSuperfood) {
+                        var status = computeFoodTarget();
+                        if (!status) {
+                            
+                        }
                     }
                 }
             } else {
@@ -210,36 +214,50 @@ public class BotService {
      * mencari target makanan selanjutnya
      */
     private boolean computeFoodTarget() {
-    // TODO: confirm the target is safe from gas cloud or other player
-    System.out.println("Compute Food Safe...\n");
-    var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
-    System.out.println("list gas...\n");
-    System.out.println(listGas);
-    var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
-    System.out.println("list asteroid...\n");
-    System.out.println(listAst);
-    if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary() > BOUNDRY_RADIUS) {   
-        System.out.println("Food is safe..\n");
-        var foodList = gameState.getGameObjects()
-        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
-        .sorted(Comparator
-        .comparing(item -> getDistanceBetween(bot, item)))
-        .collect(Collectors.toList());
-
-        playerAction.heading = getHeadingBetween(foodList.get(0));
-        return true;
-    } else if (listAst.isEmpty() || listGas.isEmpty()) { // MASIH BELOM FIX AMAN
-        System.out.println("Food is safe but the distance is longer...\n");
-        var foodList = gameState.getGameObjects()
-        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && getOuterDistanceBetween(bot, item) > 10) // MASIH KIRA2 ALIAS BLM AMAN
-        .sorted(Comparator
-        .comparing(item -> getDistanceBetween(bot, item)))
-        .collect(Collectors.toList());
-
-        playerAction.heading = getHeadingBetween(foodList.get(0));
-        return true;
+        // TODO: confirm the target is safe from gas cloud or other player
+        System.out.println("Compute Food Safe...\n");
+        var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
+        System.out.println("list gas...\n");
+        System.out.println(listGas);
+        var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
+        System.out.println("list asteroid...\n");
+        System.out.println(listAst);
+        if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary() > BOUNDRY_RADIUS) {   
+            System.out.println("Food is safe..\n");
+            var foodList = gameState.getGameObjects()
+            .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
+            .sorted(Comparator
+            .comparing(item -> getDistanceBetween(bot, item)))
+            .collect(Collectors.toList());
+            
+            playerAction.heading = getHeadingBetween(foodList.get(0));
+            return true;
+        } else if (listAst.isEmpty() || listGas.isEmpty()) { // MASIH BELOM FIX AMAN
+            System.out.println("Food is safe but the distance is longer...\n");
+            var foodList = gameState.getGameObjects()
+            .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && getOuterDistanceBetween(bot, item) > 10) // MASIH KIRA2 ALIAS BLM AMAN
+            .sorted(Comparator
+            .comparing(item -> getDistanceBetween(bot, item)))
+            .collect(Collectors.toList());
+            
+            playerAction.heading = getHeadingBetween(foodList.get(0));
+            return true;
+        }
+        return false; 
     }
-    return false; 
+
+    private boolean getSuperfood(List<GameObject> object) {
+        System.out.println("Cek Superfood...\n");
+        var hasil = object.stream()
+        .filter(item -> item.getGameObjectType() == ObjectTypes.SUPERFOOD)
+        .collect(Collectors.toList());
+        
+        if (!hasil.isEmpty()){
+            System.out.println("ADA SUPERFOOD...\n");
+            playerAction.heading = getHeadingBetween(hasil.get(0));
+            return true;
+        }
+        return false;
     }
 
     private List<GameObject> getGasCloudWithin(List<GameObject> objList) {
@@ -305,14 +323,6 @@ public class BotService {
         }
 
         return superbomb;
-    }
-
-    private List<GameObject> getSuperfood(List<GameObject> object) {
-        System.out.println("Cek Superfood...\n");
-        var hasil = object.stream()
-        .filter(item -> item.getGameObjectType() == ObjectTypes.SUPERFOOD)
-        .collect(Collectors.toList());
-        return hasil;
     }
 
     private void updateSelfState() {
