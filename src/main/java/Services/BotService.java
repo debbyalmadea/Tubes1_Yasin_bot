@@ -211,11 +211,15 @@ public class BotService {
      */
     private boolean computeFoodTarget() {
     // TODO: confirm the target is safe from gas cloud or other player
-    System.out.println("Compute Food Save...\n");
+    System.out.println("Compute Food Safe...\n");
     var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
+    System.out.println("list gas...\n");
+    System.out.println(listGas);
     var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
-    if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary() < BOUNDRY_RADIUS) {   
-        System.out.println("Food is save..\n");
+    System.out.println("list asteroid...\n");
+    System.out.println(listAst);
+    if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary() > BOUNDRY_RADIUS) {   
+        System.out.println("Food is safe..\n");
         var foodList = gameState.getGameObjects()
         .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
         .sorted(Comparator
@@ -225,9 +229,9 @@ public class BotService {
         playerAction.heading = getHeadingBetween(foodList.get(0));
         return true;
     } else if (listAst.isEmpty() || listGas.isEmpty()) { // MASIH BELOM FIX AMAN
-        System.out.println("Food is save but the distance is longer...\n");
+        System.out.println("Food is safe but the distance is longer...\n");
         var foodList = gameState.getGameObjects()
-        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && getOuterDistanceBetween(bot, item) < 10) // MASIH KIRA2 ALIAS BLM AMAN
+        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && getOuterDistanceBetween(bot, item) > 10) // MASIH KIRA2 ALIAS BLM AMAN
         .sorted(Comparator
         .comparing(item -> getDistanceBetween(bot, item)))
         .collect(Collectors.toList());
@@ -342,7 +346,7 @@ public class BotService {
         var distanceFromOrigin = (int) Math.ceil(Math.sqrt(Math.pow(bot.getPosition().x , 2) + Math.pow(bot.getPosition().y, 2)));
 
         if (gameState.world.getRadius() != null) {
-
+            System.out.println(gameState.world.getRadius() - distanceFromOrigin - bot.getSize());
             return gameState.world.getRadius() - distanceFromOrigin - bot.getSize();
         } 
 
