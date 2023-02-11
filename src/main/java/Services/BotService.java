@@ -12,13 +12,14 @@ public class BotService {
     private GameState gameState;
     private GameObject target;
     private GameObject teleporter;
+    private GameObject superbomb;
     // ADD MORE CONST IF ANY
     final int SAFETY_NUM = 20;
     final int TELEPORT_COST = 20;
     final int PLAYER_RADIUS = 800;
     final int SUPERNOVA_RADIUS = 50;
     final int SUPERFOOD_RADIUS = 50;
-    final int GASCLOUD_RADIUS = 10;
+    final int SUPERNOVABOMB_RADIUS = 200;    final int GASCLOUD_RADIUS = 10;
     final int BOUNDRY_RADIUS = 10;
     final int ASTEROID_RADIUS = 5;
 
@@ -58,6 +59,7 @@ public class BotService {
             System.out.printf("TELEPORT COUNT: %d\n", bot.teleporterCount);
 
             var teleporterList = getTeleporter();
+            var superbombList = getSupernovaBomb();
             // TELEPORT
             if (!teleporterList.isEmpty()) {
                 this.teleporter = teleporterList.get(0);
@@ -103,6 +105,18 @@ public class BotService {
                             target = null;
                         }
                         i++;
+                    }
+                } else {
+                    if (!superbombList.isEmpty()) {
+                        this.superbomb = superbombList.get(0);
+                        if (isObjHeadingUs(bot, superbomb)) {
+                            dodgeObj(bot, superbomb);
+                        } else {
+                            computeFoodTarget();
+                        }
+                    }
+                    else {
+                        //lain
                     }
                 }
                 
@@ -276,6 +290,18 @@ public class BotService {
         .collect(Collectors.toList());
         return hasil;
     } 
+
+    private List<GameObject> getSupernovaBomb() {
+        var superbomb =  gameState.getGameObjects()
+        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.SUPERNOVABOMB)
+        .collect(Collectors.toList());
+
+        if (!superbomb.isEmpty()) {
+            return superbomb;
+        }
+
+        return superbomb;
+    }
 
     private List<GameObject> getSuperfood(List<GameObject> object) {
         System.out.println("Cek Superfood...\n");
