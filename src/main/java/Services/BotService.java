@@ -10,8 +10,6 @@ public class BotService {
     private GameObject bot;
     private PlayerAction playerAction;
     private GameState gameState;
-    private GameObject target;
-    private GameObject teleporter;
     private GameObject superbomb;
     private GameObject firedTeleporter;
     // ADD MORE CONST IF ANY
@@ -67,13 +65,14 @@ public class BotService {
             getFiredTeleporter();
             // TELEPORT
             if (this.firedTeleporter != null && isTeleporterStillAvailable()) {
-                var isObjHeadingUs = isObjHeadingUs(bot, teleporter);
-                if (isObjHeadingUs) {
+                var nearestTeleporter = getNearestTeleporter();
+                if (nearestTeleporter != null && isObjHeadingUs(bot, nearestTeleporter))  {
                     playerAction.action = PlayerActions.FORWARD;
-                    playerAction.heading = dodgeObj(bot, teleporter);
+                    playerAction.heading = dodgeObj(bot, nearestTeleporter);
                 }
                 
-                if (!isObjHeadingUs && isTeleporterNearSmallerEnemy()) {
+                else{
+                    if( isTeleporterNearSmallerEnemy()) {
                     playerAction.setAction(PlayerActions.TELEPORT);
                     this.firedTeleporter = null;
                 } else {
@@ -83,6 +82,7 @@ public class BotService {
                         if (!status) {
                             
                         }
+                       }  
                     }
                 }
             } else {
@@ -115,6 +115,21 @@ public class BotService {
     public void setGameState(GameState gameState) {
         this.gameState = gameState;
         updateSelfState();
+    }
+
+    private GameObject getNearestTeleporter() {
+        var teleporter =  gameState.getGameObjects()
+        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER)
+        .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
+        .collect(Collectors.toList());
+
+        if (!teleporter.isEmpty()) {
+            System.out.println("Found teleporter\n");
+
+            return teleporter.get(0);
+        }
+
+        return null;
     }
 
     private void getFiredTeleporter() {
