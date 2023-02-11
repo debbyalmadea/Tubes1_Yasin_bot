@@ -80,10 +80,17 @@ public class BotService {
                     var i = 0;
                     while (i < playerList.size()) {
                         target = playerList.get(i);
-                        if (computeOffense()) {
-                            // FOUND NEW TARGET FOR OFFENSE
+                        if (!computeOffense()) {
+                            // BIGGER ENEMY IN RANGE
+                            playerAction.action = PlayerActions.FORWARD;
+                            playerAction.heading = runFromAtt(bot, target);
+                            if (playerAction.heading == -1) {
+                                computeFoodTarget();
+                            }
                             break;
-                        } 
+                        } else {
+                            // FOUND NEW TARGET FOR OFFENSE
+                        }
     
                         if (i == playerList.size() - 1) {
                             System.out.println("No target available...setting to null...\n");
@@ -144,13 +151,20 @@ public class BotService {
             System.out.println("TARGET IS NULL\n");
         }
         if (this.target != null && this.teleporter != null) {
-            // TODO: mengecek kembali size dari target apakah masih memungkinkan atau tidak
-            System.out.printf("DISTANCE TELEPORTER FROM TARGET: %d\n", (int) getDistanceBetween(target, teleporter));
-            if ((int) getDistanceBetween(target, teleporter) <= 20) {
-                System.out.println("Teleporting...\n");
-                playerAction.action = PlayerActions.TELEPORT;
+            if (!isObjHeadingUs(bot, teleporter)) {
+                // TODO: mengecek kembali size dari target apakah masih memungkinkan atau tidak
+                System.out.printf("DISTANCE TELEPORTER FROM TARGET: %d\n", (int) getDistanceBetween(target, teleporter));
+                if ((int) getDistanceBetween(target, teleporter) <= 20) {
+                    System.out.println("Teleporting...\n");
+                    playerAction.action = PlayerActions.TELEPORT;
+                    return true;
+                }
+            } else {
+                playerAction.action = PlayerActions.FORWARD;
+                playerAction.heading = dodgeObj(bot, teleporter);
                 return true;
             }
+
         }
 
         return false;
@@ -284,29 +298,33 @@ public class BotService {
         return toDegrees(Math.atan2(gameObject2.position.y - gameObject1.position.y, gameObject2.position.x - gameObject1.position.y));
     }
 
-    private double runFromAtt(GameObject bot, GameObject atkr) 
+    private int runFromAtt(GameObject bot, GameObject atkr) 
     {
         var distAtkr = getDistanceBetween(atkr);
         var headingAtkr = atkr.currentHeading;
         if (distAtkr <= atkr.speed && headingAtkr == getOppositeDirection(bot, atkr)) {
             return getOppositeDirection(bot, atkr);
         } else {
-            return bot.currentHeading;
+            return -1;
         }
         
     }
 
-    private double dodgeObj(GameObject bot, GameObject obj)
+    private int dodgeObj(GameObject bot, GameObject obj)
     {
         var headingObj = obj.currentHeading;
+
         if ((headingObj-getOppositeDirection(bot, obj)%360>=0 && headingObj-getOppositeDirection(bot, obj)%360<60)) {
-            return (getOppositeDirection(bot, obj) - 90) % 360;
+            return (getOppositeDirection(bot, obj) - 180 + headingObj) % 360;
         } else if ((headingObj-getOppositeDirection(bot, obj)%360<0 && headingObj-getOppositeDirection(bot, obj)%360>-60)) {
-            return (getOppositeDirection(bot, obj)+90) %360;
+            return (getOppositeDirection(bot, obj)+ 180 - headingObj) %360;
         } else {
-            return bot.currentHeading;
+            return -1;
         }
     }
 
+    private boolean isObjHeadingUs(GameObject bot, GameObject obj) {
+        return (((headingObj-getOppositeDirection(bot, obj)%360>=0 && headingObj-getOppositeDirection(bot, obj)%360<60)))||(((headingObj-getOppositeDirection(bot, obj)%360<0 && headingObj-getOppositeDirection(bot, obj)%360>-60)));
+    }
     
 }
