@@ -18,6 +18,9 @@ public class BotService {
     final int PLAYER_RADIUS = 800;
     final int SUPERNOVA_RADIUS = 50;
     final int SUPERFOOD_RADIUS = 50;
+    final int GASCLOUD_RADIUS = 10;
+    final int BOUNDRY_RADIUS = 10;
+    final int ASTEROID_RADIUS = 5;
 
     public BotService() {
         this.playerAction = new PlayerAction();
@@ -61,7 +64,10 @@ public class BotService {
                 if (computeTeleport()) {
                     /* NOTHING */
                 } else {
-                    computeFoodTarget();
+                    var status = computeFoodTarget();
+                    if (!status) {
+                        
+                    }
                 }
             } else {
 
@@ -189,16 +195,49 @@ public class BotService {
     /*
      * mencari target makanan selanjutnya
      */
-    private void computeFoodTarget() {
-        // TODO: confirm the target is safe from gas cloud or other player
-        System.out.println("Waiting for teleporter...\n");
+    private boolean computeFoodTarget() {
+    // TODO: confirm the target is safe from gas cloud or other player
+    System.out.println("Compute Food Save...\n");
+    var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
+    var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
+    if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary() < BOUNDRY_RADIUS) {   
+        System.out.println("Food is save..\n");
         var foodList = gameState.getGameObjects()
-                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
-                .sorted(Comparator
-                        .comparing(item -> getDistanceBetween(bot, item)))
-                .collect(Collectors.toList());
+        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
+        .sorted(Comparator
+        .comparing(item -> getDistanceBetween(bot, item)))
+        .collect(Collectors.toList());
 
         playerAction.heading = getHeadingBetween(foodList.get(0));
+        return true;
+    } else if (listAst.isEmpty() || listGas.isEmpty()) { // MASIH BELOM FIX AMAN
+        System.out.println("Food is save but the distance is longer...\n");
+        var foodList = gameState.getGameObjects()
+        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && getOuterDistanceBetween(bot, item) < 10) // MASIH KIRA2 ALIAS BLM AMAN
+        .sorted(Comparator
+        .comparing(item -> getDistanceBetween(bot, item)))
+        .collect(Collectors.toList());
+
+        playerAction.heading = getHeadingBetween(foodList.get(0));
+        return true;
+    }
+    return false; 
+    }
+
+    private List<GameObject> getGasCloudWithin(List<GameObject> objList) {
+        System.out.println("Get Gas Within...\n");
+        var hasil = objList.stream()
+        .filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD)
+        .collect(Collectors.toList());
+        return hasil;
+    }
+
+    private List<GameObject> getAsteroidWithin(List<GameObject> objList) {
+        System.out.println("Get Asteroid Within...\n");
+        var hasil = objList.stream()
+        .filter(item -> item.getGameObjectType() == ObjectTypes.ASTEROIDFIELD)
+        .collect(Collectors.toList());
+        return hasil;
     }
 
     /**
@@ -274,11 +313,11 @@ public class BotService {
     }
  
     private int getDistanceBoundary() {
-        var distanceFromOrigin = (int) Math.ceil(Math.sqrt(Math.pow(bot.getPosition().x, 2) + Math.pow(bot.getPosition().y, 2)));
+        var distanceFromOrigin = (int) Math.ceil(Math.sqrt(Math.pow(bot.getPosition().x , 2) + Math.pow(bot.getPosition().y, 2)));
 
         if (gameState.world.getRadius() != null) {
 
-            return gameState.world.getRadius() - distanceFromOrigin;
+            return gameState.world.getRadius() - distanceFromOrigin - bot.getSize();
         } 
 
         return 123;
@@ -324,6 +363,7 @@ public class BotService {
     }
 
     private boolean isObjHeadingUs(GameObject bot, GameObject obj) {
+        var headingObj = obj.currentHeading;
         return (((headingObj-getOppositeDirection(bot, obj)%360>=0 && headingObj-getOppositeDirection(bot, obj)%360<60)))||(((headingObj-getOppositeDirection(bot, obj)%360<0 && headingObj-getOppositeDirection(bot, obj)%360>-60)));
     }
     
