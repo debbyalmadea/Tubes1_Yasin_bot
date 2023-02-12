@@ -10,7 +10,7 @@ public enum PlayerActions {
   DETONATESUPERNOVA(7),
   FIRETELEPORT(8),
   TELEPORT(9),
-  USESHIELD(10);
+  ACTIVATESHIELD(10);
 
   public final Integer value;
 
