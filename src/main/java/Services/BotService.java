@@ -182,7 +182,6 @@ public class BotService {
         }
 
         this.playerAction = playerAction;
-        // System.out.printf("ACTION: %d\n", playerAction.action.value);
         return true;
 
     }
@@ -196,6 +195,10 @@ public class BotService {
         updateSelfState();
     }
 
+    /**
+     * 
+     * Bergerak ke pusat
+     */
     private void moveToCenter() {
         Position position = new Position(0, 0);
         GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
@@ -211,6 +214,10 @@ public class BotService {
     }
 
     // TELEPORT MECHANISM
+    /**
+     * 
+     * @return Mendapatkan object teleporter terdekat
+     */
     private GameObject getNearestTeleporter() {
         var teleporter = getObjectsWithin(200)
                 .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER)
@@ -224,6 +231,10 @@ public class BotService {
         return null;
     }
 
+    /**
+     * 
+     * Mendapatkan teleporter yang baru saja ditembak
+     */
     private void getFiredTeleporter() {
         var teleporterList = gameState.getGameObjects()
                 .stream()
@@ -239,6 +250,10 @@ public class BotService {
         }
     }
 
+    /**
+     * 
+     * @return True jika teleporter yang sudah ditembak masih ada di dunia
+     */
     private boolean isTeleporterStillAvailable() {
         var teleporterList = gameState.getGameObjects()
                 .stream().filter(item -> item.getId().equals(firedTeleporter.getId()))
@@ -255,6 +270,11 @@ public class BotService {
         return !teleporterList.isEmpty();
     }
 
+    /**
+     * 
+     * @return True jika teleporter yang ditembak sedang berada
+     *         di dekat musuh yang lebih kecil
+     */
     private boolean isTeleporterNearSmallerEnemy() {
         if (this.firedTeleporter == null) {
             System.out.println("TELEPORTER IS NULL");
@@ -283,6 +303,7 @@ public class BotService {
     /**
      * 
      * @return true jika terdapat bot lain yang bisa dimakan
+     *         dengan menggunakan teleporter
      */
     private boolean fireTeleporter() {
         if (this.firedTeleporter != null || this.playerAction.action == PlayerActions.FIRETELEPORT) {
@@ -309,6 +330,11 @@ public class BotService {
     }
 
     // ATTACK MECHANISM
+    /**
+     * Menembakkan torpedo salvo
+     * 
+     * @return true jika bot dapat menembak torpedo salvo
+     */
     private boolean fireTorpedoSalvo() {
         if (bot.torpedoSalvoCount <= 0) {
             return false;
@@ -319,21 +345,26 @@ public class BotService {
         }
 
         var playerList = getPlayersWithin(TORPEDO_RADIUS)
-                .stream().filter(item -> item.effects < 16)
+                .stream().filter(item -> item.effects < 16 && !item.getId().equals(bot.getId()))
                 .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .collect(Collectors.toList());
 
-        if (playerList.size() <= 1) {
+        if (playerList.size() == 0) {
             return false;
         }
 
-        int heading = getHeadingBetween(playerList.get(1));
+        int heading = getHeadingBetween(playerList.get(0));
         playerAction.action = PlayerActions.FIRETORPEDOES;
         playerAction.heading = heading;
         System.out.printf("Fired torpedoeeeees...\n");
         return true;
     }
 
+    /**
+     * 
+     * @param obj Object yang akan dicek
+     * @return true jika obj dekat dengan object yang berbahaya
+     */
     private boolean isObjectNearDangerousObject(GameObject obj) {
         List<GameObject> dangerousObj = gameState.getGameObjects()
                 .stream().filter(item -> getOuterDistanceBetween(obj, item) <= bot.speed * 2 &&
@@ -345,6 +376,12 @@ public class BotService {
         return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= bot.speed + bot.size;
     }
 
+    /**
+     * !WARNING EXPERIMENTAL FUNCTION
+     * 
+     * @param heading Heading yang akan dicek
+     * @return true jika heading menuju object yang berbahaya
+     */
     private boolean isHeadingNearDangerousObject(int heading) {
         List<GameObject> dangerousObj = gameState.getGameObjects()
                 .stream().filter(item -> getDistanceBetween(item) <= bot.speed + bot.size &&
@@ -363,6 +400,11 @@ public class BotService {
         return !dangerousObj.isEmpty() || !dangerousPlayer.isEmpty();
     }
 
+    /**
+     * 
+     * @return player terdekat yang dapat kita makan,
+     *         null jika tidak ada
+     */
     private GameObject getVunerableNearPlayer() {
         List<GameObject> playerNearBot = getPlayersWithin(bot.speed * 2)
                 .stream().sorted(Comparator.comparing(item -> item.getSize()))
@@ -379,6 +421,10 @@ public class BotService {
         return null;
     }
 
+    /**
+     * 
+     * Bergerak menuju super food dan food terdekat
+     */
     private void goToFood() {
         var cekSuperfood = getSuperfood(getObjectsWithin(SUPERFOOD_RADIUS));
         if (!cekSuperfood) {
@@ -389,8 +435,11 @@ public class BotService {
         }
     }
 
-    /*
-     * mencari target makanan selanjutnya
+    /**
+     * Mendapatkan makanan terdekat
+     * 
+     * @return true jika terdapat makanan terdekat
+     *         yang dapat dimakan
      */
     private boolean computeFoodTarget() {
         // System.out.println("Compute Food Safe...\n");
@@ -426,6 +475,13 @@ public class BotService {
         return false;
     }
 
+    /**
+     * Mendapatkan super food terdekat
+     * !ADVICE kalau bisa object langsung aja dikalkulasi di dalam fungsi ini
+     * 
+     * @param object
+     * @return true jika terdapat superfood pada object
+     */
     private boolean getSuperfood(List<GameObject> object) {
         // System.out.println("Cek Superfood...\n");
         var hasil = object.stream()
@@ -463,8 +519,6 @@ public class BotService {
      * @return List dari game objects yang ada di dalam radius
      */
     private List<GameObject> getObjectsWithin(int radius) {
-        // TODO: Use this in main func
-        // System.out.println("GET OBJECT WITHIN\n");
         var objList = gameState.getGameObjects()
                 .stream().filter(item -> getOuterDistanceBetween(bot, item) <= radius)
                 .collect(Collectors.toList());
@@ -472,6 +526,12 @@ public class BotService {
         return objList;
     }
 
+    /**
+     * 
+     * @param radius
+     * @param type
+     * @return List dari game objects dalam radius dengan tipe object type
+     */
     private List<GameObject> getObjectsWithin(int radius, ObjectTypes type) {
         return getObjectsWithin(radius).stream().filter(item -> item.getGameObjectType() == type)
                 .collect(Collectors.toList());
@@ -491,6 +551,11 @@ public class BotService {
         return objList;
     }
 
+    /**
+     * 
+     * @return Supernova pickup,
+     *         null jika tidak ada
+     */
     private GameObject getSupernova() {
         // System.out.println("Cek Supernova...\n");
         var supernova = getObjectsWithin(bot.speed * 4).stream()
@@ -504,6 +569,11 @@ public class BotService {
         return supernova.get(0);
     }
 
+    /**
+     * !REMINDER supernovabomb hanya ada 1
+     * 
+     * @return List of supernova bomb
+     */
     private List<GameObject> getSupernovaBomb() {
         var superbomb = gameState.getGameObjects()
                 .stream().filter(item -> item.getGameObjectType() == ObjectTypes.SUPERNOVABOMB)
@@ -544,6 +614,11 @@ public class BotService {
         return (direction + 360) % 360;
     }
 
+    /**
+     * 
+     * @param obj
+     * @return jarak dari obj ke boundary (batas)
+     */
     private int getDistanceBoundary(GameObject obj) {
         var distanceFromOrigin = (int) Math
                 .ceil(Math.sqrt(obj.getPosition().x * obj.getPosition().x + obj.getPosition().y * obj.getPosition().y));
@@ -563,12 +638,24 @@ public class BotService {
         return getDistanceBetween(bot, go);
     }
 
+    /**
+     * 
+     * @param gameObject1
+     * @param gameObject2
+     * @return
+     */
     private int getOppositeDirection(GameObject gameObject1, GameObject gameObject2) {
         return toDegrees(Math.atan2(gameObject2.position.y - gameObject1.position.y,
                 gameObject2.position.x - gameObject1.position.y));
     }
 
     // AVOIDING OTHER PLAYER
+    /**
+     * 
+     * @return player lain yang berpotensi menimbulkan
+     *         masalah untuk kita, yaitu memiliki size lebih besar
+     *         dan jaraknya dekat
+     */
     private GameObject getDangerousNearPlayer() {
         List<GameObject> playerNearBot = getPlayersWithin(100)
                 .stream().filter(item -> !bot.getId().equals(item.getId()))
@@ -587,11 +674,26 @@ public class BotService {
         return null;
     }
 
+    /**
+     * Berlari dari musuh atkr
+     * Pengecekan apakah musuh berbahaya ada di fungsi utama
+     * 
+     * @param atkr musuh yang menyerang kita,
+     */
     private void runFromAtt(GameObject atkr) {
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = getOppositeDirection(bot, atkr);
     }
 
+    /**
+     * !REMINDER apakah obj bahaya bakal dicek di fungsi utama aja, fokus ke cara
+     * dodge, asumsi obj emang bahaya
+     * 
+     * 
+     * @param obj
+     * @param radius
+     * @return Menghindar dari obj
+     */
     private boolean dodgeObj(GameObject obj, int radius) {
         var headingObj = obj.currentHeading;
 
@@ -622,6 +724,13 @@ public class BotService {
         }
     }
 
+    /**
+     * !REMINDER apakah obj bahaya udah dicek di fungsi utama, fokus ke cara
+     * dodge, asumsi obj emang bahaya
+     * 
+     * @param obj
+     * @return
+     */
     private boolean dodgeTorpedos(GameObject obj) {
         var headingObj = obj.currentHeading;
 
@@ -669,6 +778,11 @@ public class BotService {
         }
     }
 
+    /**
+     * 
+     * @param obj
+     * @return true jika object mengarah ke kita
+     */
     private boolean isObjHeadingUs(GameObject obj) {
         var headingObj = obj.currentHeading;
         return (((headingObj - getOppositeDirection(bot, obj) % 360 >= 0
@@ -678,6 +792,11 @@ public class BotService {
     }
 
     // ESCAPING FROM GAS CLOUD
+    /**
+     * 
+     * @return mengembalikan object gas cloud terdekat
+     *         null jika tidak ada
+     */
     private GameObject getGasCloudInPath() {
         List<GameObject> gcList = gameState.getGameObjects()
                 .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD &&
@@ -690,6 +809,11 @@ public class BotService {
         }
     }
 
+    /**
+     * Mengambil efek yang dimiliki bot kita
+     * 
+     * @param hashCode kode hash dari efek
+     */
     private void getEffects(int hashCode) {
         if (hashCode == 0) {
             /* DO NOTHING */
