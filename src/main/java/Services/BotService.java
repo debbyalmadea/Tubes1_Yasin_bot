@@ -99,7 +99,7 @@ public class BotService {
                                             .sorted(Comparator.comparing(item->getDistanceBetween(item)))
                                             .toList();
                 if (!torpedoes.isEmpty()) {
-                    var runTorpedos = dodgeTorpedos(torpedoes.get(0), TELEPORTDODGE_R);
+                    var runTorpedos = dodgeTorpedos(torpedoes.get(0));
                     if (!runTorpedos) {
                         System.out.println("ADA TORPEDOS TAPI AMAN\n");
                     }
@@ -469,25 +469,23 @@ public class BotService {
         var headingObj = obj.currentHeading;
 
         if ((headingObj-getOppositeDirection(bot, obj)%360>=0 && headingObj-getOppositeDirection(bot, obj)%360<60)) {
-            if (bot.getSize() > 20 && getDistanceBetween(obj) < radius) {
-                System.out.println((char)27+"[01;31m STARTAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STARTAFTERBURNER;
+            if (getDistanceBetween(obj) < radius) {
+                System.out.println((char)27+"[01;32m LARI-LARI-LARI-LARI\n"+(char)27+"[00;00m");
+                playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360; 
                 return true;
             } else {
-                System.out.println((char)27+"[01;32m STOPAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STOPAFTERBURNER;
+                System.out.println((char)27+"[01;31m AMAN DARI SERANGAN\n"+(char)27+"[00;00m");
                 return true;
             }
         } else if ((headingObj-getOppositeDirection(bot, obj)%360<0 && headingObj-getOppositeDirection(bot, obj)%360>-60)) {
-            if (bot.getSize() > 20 && getDistanceBetween(obj) < radius) {
-                System.out.println((char)27+"[01;31m STARTAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STARTAFTERBURNER;
+            if (getDistanceBetween(obj) < radius) {
+                System.out.println((char)27+"[01;31m LARI-LARI-LARI-LARI\n"+(char)27+"[00;00m");
+                playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) %360; 
                 return true;
             } else {
-                System.out.println((char)27+"[01;32m STOPAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STOPAFTERBURNER;
+                System.out.println((char)27+"[01;32m AMAN DARI\n"+(char)27+"[00;00m");
                 return true;
             }
         } else {
@@ -495,40 +493,44 @@ public class BotService {
         }
     }
 
-    private boolean dodgeTorpedos(GameObject obj, int radius)
+    private boolean dodgeTorpedos(GameObject obj)
     {
         var headingObj = obj.currentHeading;
 
-        if ((headingObj-getOppositeDirection(bot, obj)%360>=0 && headingObj-getOppositeDirection(bot, obj)%360<60)) {
-            if (bot.getSize() > 30 && getDistanceBetween(obj) < radius) {
-                System.out.println((char)27+"[01;31m USESHIELD\n"+(char)27+"[00;00m");
+        if ((headingObj-getOppositeDirection(bot, obj)%360>5 && headingObj-getOppositeDirection(bot, obj)%360<30)) {
+            if (bot.getSize() > 40 && getDistanceBetween(obj) < TORPEDODODGE_R) {
+                System.out.println((char)27+"[01;32m USESHIELD\n"+(char)27+"[00;00m");
                 playerAction.action = PlayerActions.USESHIELD;
                 playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360; 
                 return true;
-            } else if (bot.getSize() > 20 && getDistanceBetween(obj) < radius) {
-                System.out.println((char)27+"[01;31m STARTAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STARTAFTERBURNER;
-                playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360; 
-                return true;
             } else {
-                System.out.println((char)27+"[01;32m STOPAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STOPAFTERBURNER;
+                System.out.println((char)27+"[01;31m LARI DARI TORPEDOS\n"+(char)27+"[00;00m");
+                playerAction.action = PlayerActions.FORWARD;
+                playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360;
                 return true;
             }
-        } else if ((headingObj-getOppositeDirection(bot, obj)%360<0 && headingObj-getOppositeDirection(bot, obj)%360>-60)) {
-            if (bot.getSize() > 30 && getDistanceBetween(obj) < radius) {
-                System.out.println((char)27+"[01;31m USESHIELD\n"+(char)27+"[00;00m");
+        } else if ((headingObj-getOppositeDirection(bot, obj)%360<-5 && headingObj-getOppositeDirection(bot, obj)%360>-30)) {
+            if (bot.getSize() > 40 && getDistanceBetween(obj) < TORPEDODODGE_R) {
+                System.out.println((char)27+"[01;32m USESHIELD\n"+(char)27+"[00;00m");
                 playerAction.action = PlayerActions.USESHIELD;
                 playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) %360; 
                 return true;
-            } else if (bot.getSize() > 20 && getDistanceBetween(obj) < radius) {
-                System.out.println((char)27+"[01;31m STARTAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STARTAFTERBURNER;
-                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) %360; 
+            } else {
+                System.out.println((char)27+"[01;31m LARI DARI TORPEDOS\n"+(char)27+"[00;00m");
+                playerAction.action = PlayerActions.FORWARD;
+                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) %360;
+                return true;
+            }
+        } else if ((headingObj-getOppositeDirection(bot, obj)%360<=5 && headingObj-getOppositeDirection(bot, obj)%360>=-5)){ 
+            if (bot.getSize() > TORPEDO_COST * 5){
+                System.out.println((char)27+"[01;32m TEMBAK BALIK TORPEDOS\n"+(char)27+"[00;00m");
+                playerAction.action = PlayerActions.FIRETORPEDOES;
+                playerAction.heading = (360-getOppositeDirection(bot, obj)) % 360;
                 return true;
             } else {
-                System.out.println((char)27+"[01;32m STOPAFTERBURNER\n"+(char)27+"[00;00m");
-                playerAction.action = PlayerActions.STOPAFTERBURNER;
+                System.out.println((char)27+"[01;31m LARI DARI TORPEDOS\n"+(char)27+"[00;00m");
+                playerAction.action = PlayerActions.FORWARD;
+                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) %360;
                 return true;
             }
         } else {
