@@ -125,7 +125,7 @@ public class BotService {
                 }
             }
 
-            if (distanceFromBoundary <= 100) {
+            if (distanceFromBoundary <= bot.getSize() + 20) {
                 System.out.println("TOO CLOSE TO BOUNDARY...MOVING TO CENTER...\n");
                 moveToCenter();
                 return true;
@@ -153,7 +153,7 @@ public class BotService {
             if (gasCloud != null && distanceFromBoundary <= bot.speed + bot.getSize() + 40) {
                 System.out.println("Avoid Gas Cloud");
                 playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = getOppositeDirection(bot, gasCloud);
+                playerAction.heading = getOppositeDirection(gasCloud);
                 return true;
             }
 
@@ -166,12 +166,12 @@ public class BotService {
             }
 
             List<GameObject> torpedoes = getObjectsWithin(AVOID_TORPEDO_RADIUS, ObjectTypes.TORPEDOSALVO)
-                                        .stream().filter(item->Math.abs(getHeadingBetween(item) - item.currentHeading) >= 90)
+                                        .stream().filter(item->isObjHeadingUs(item))
                                         .sorted(Comparator.comparing(item->getDistanceBetween(item)))
                                         .toList();
             if (!torpedoes.isEmpty()) {
                 System.out.println("Avoiding torpedoes");
-                dodgeTorpedos_alternate(torpedoes.get(0));
+                dodgeTorpedos(torpedoes.get(0));
                 return true;
             }
 
@@ -461,7 +461,7 @@ public class BotService {
      *         null jika tidak ada
      */
     private GameObject getVunerableNearPlayer() {
-        List<GameObject> playerNearBot = getPlayersWithin(bot.speed * 2)
+        List<GameObject> playerNearBot = getPlayersWithin(bot.speed * 8)
                 .stream().sorted(Comparator.comparing(item -> item.getSize()))
                 .toList();
         if (playerNearBot.size() <= 1) {
@@ -515,9 +515,9 @@ public class BotService {
             return false;
         }
 
-        var shortedDistance = getDistanceBetween(foodList.get(0));
+        var shortedDistance = (int) getDistanceBetween(foodList.get(0));
 
-        var shortedFoodList = foodList.stream().filter(item -> getDistanceBetween(item) == shortedDistance)
+        var shortedFoodList = foodList.stream().filter(item -> ((int) getDistanceBetween(item)) == shortedDistance)
                                 .sorted(Comparator
                                         .comparing(item -> item.getId()))
                                 .toList();
@@ -736,9 +736,8 @@ public class BotService {
      * @param gameObject2
      * @return
      */
-    private int getOppositeDirection(GameObject gameObject1, GameObject gameObject2) {
-        return toDegrees(Math.atan2(gameObject2.position.y - gameObject1.position.y,
-                gameObject2.position.x - gameObject1.position.y));
+    private int getOppositeDirection(GameObject obj) {
+        return (180 + getHeadingBetween(obj)) % 360;
     }
 
     // AVOIDING OTHER PLAYER
@@ -774,7 +773,7 @@ public class BotService {
      */
     private void runFromAtt(GameObject atkr) {
         playerAction.action = PlayerActions.FORWARD;
-        playerAction.heading = getOppositeDirection(bot, atkr);
+        playerAction.heading = getOppositeDirection(atkr);
     }
 
     /**
@@ -789,23 +788,23 @@ public class BotService {
     private boolean dodgeObj(GameObject obj, int radius) {
         var headingObj = obj.currentHeading;
 
-        if ((headingObj - getOppositeDirection(bot, obj) % 360 >= 0
-                && headingObj - getOppositeDirection(bot, obj) % 360 < 60)) {
+        if ((headingObj - getOppositeDirection(obj) % 360 >= 0
+                && headingObj - getOppositeDirection(obj) % 360 < 60)) {
             if (getDistanceBetween(obj) < radius) {
                 System.out.println((char) 27 + "[01;32m LARI-LARI-LARI-LARI\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) - 90 + headingObj) % 360;
                 return true;
             } else {
                 System.out.println((char) 27 + "[01;31m AMAN DARI SERANGAN\n" + (char) 27 + "[00;00m");
                 return true;
             }
-        } else if ((headingObj - getOppositeDirection(bot, obj) % 360 < 0
-                && headingObj - getOppositeDirection(bot, obj) % 360 > -60)) {
+        } else if ((headingObj - getOppositeDirection(obj) % 360 < 0
+                && headingObj - getOppositeDirection(obj) % 360 > -60)) {
             if (getDistanceBetween(obj) < radius) {
                 System.out.println((char) 27 + "[01;31m LARI-LARI-LARI-LARI\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) + 90 - headingObj) % 360;
                 return true;
             } else {
                 System.out.println((char) 27 + "[01;32m AMAN DARI\n" + (char) 27 + "[00;00m");
@@ -835,7 +834,7 @@ public class BotService {
             playerAction.heading = getHeadingBetween(obj);
         } else {
             playerAction.action = PlayerActions.FORWARD;
-            playerAction.heading = getOppositeDirection(bot, obj);
+            playerAction.heading = getOppositeDirection(obj);
             System.out.println("Run away from torpedoes");
         }
     }
@@ -850,43 +849,43 @@ public class BotService {
     private boolean dodgeTorpedos(GameObject obj) {
         var headingObj = obj.currentHeading;
 
-        if ((headingObj - getOppositeDirection(bot, obj) % 360 > 5
-                && headingObj - getOppositeDirection(bot, obj) % 360 < 30)) {
-            if (bot.getSize() > 40 && getDistanceBetween(obj) < TORPEDODODGE_R) {
+        if ((headingObj - getOppositeDirection(obj) % 360 > 5
+                && headingObj - getOppositeDirection(obj) % 360 < 30)) {
+            if (bot.getSize() > 40  && bot.shieldCount > 0) {
                 System.out.println((char) 27 + "[01;32m USESHIELD\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
-                playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) - 90 + headingObj) % 360;
                 return true;
             } else {
                 System.out.println((char) 27 + "[01;31m LARI DARI TORPEDOS\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(bot, obj) - 90 + headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) - 90 + headingObj) % 360;
                 return true;
             }
-        } else if ((headingObj - getOppositeDirection(bot, obj) % 360 < -5
-                && headingObj - getOppositeDirection(bot, obj) % 360 > -30)) {
-            if (bot.getSize() > 40 && getDistanceBetween(obj) < TORPEDODODGE_R) {
+        } else if ((headingObj - getOppositeDirection(obj) % 360 < -5
+                && headingObj - getOppositeDirection(obj) % 360 > -30)) {
+            if (bot.getSize() > 40  && bot.shieldCount > 0) {
                 System.out.println((char) 27 + "[01;32m USESHIELD\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
-                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) + 90 - headingObj) % 360;
                 return true;
             } else {
                 System.out.println((char) 27 + "[01;31m LARI DARI TORPEDOS\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) + 90 - headingObj) % 360;
                 return true;
             }
-        } else if ((headingObj - getOppositeDirection(bot, obj) % 360 <= 5
-                && headingObj - getOppositeDirection(bot, obj) % 360 >= -5)) {
+        } else if ((headingObj - getOppositeDirection(obj) % 360 <= 5
+                && headingObj - getOppositeDirection(obj) % 360 >= -5)) {
             if (bot.getSize() > TORPEDO_COST * 5) {
                 System.out.println((char) 27 + "[01;32m TEMBAK BALIK TORPEDOS\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FIRETORPEDOES;
-                playerAction.heading = (360 - getOppositeDirection(bot, obj)) % 360;
+                playerAction.heading = (360 - getOppositeDirection(obj)) % 360;
                 return true;
             } else {
                 System.out.println((char) 27 + "[01;31m LARI DARI TORPEDOS\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(bot, obj) + 90 - headingObj) % 360;
+                playerAction.heading = (getOppositeDirection(obj) + 90 - headingObj) % 360;
                 return true;
             }
         } else {
@@ -901,10 +900,10 @@ public class BotService {
      */
     private boolean isObjHeadingUs(GameObject obj) {
         var headingObj = obj.currentHeading;
-        return (((headingObj - getOppositeDirection(bot, obj) % 360 >= 0
-                && headingObj - getOppositeDirection(bot, obj) % 360 < 60)))
-                || (((headingObj - getOppositeDirection(bot, obj) % 360 < 0
-                        && headingObj - getOppositeDirection(bot, obj) % 360 > -60)));
+        return (((headingObj - getOppositeDirection(obj) % 360 >= 0
+                && headingObj - getOppositeDirection(obj) % 360 < 60)))
+                || (((headingObj - getOppositeDirection(obj) % 360 < 0
+                        && headingObj - getOppositeDirection(obj) % 360 > -60)));
     }
 
     // ESCAPING FROM GAS CLOUD
