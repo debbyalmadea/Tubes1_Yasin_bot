@@ -428,7 +428,7 @@ public class BotService {
      */
     private boolean isObjectNearDangerousObject(GameObject obj) {
         List<GameObject> dangerousObj = gameState.getGameObjects()
-                .stream().filter(item -> getOuterDistanceBetween(obj, item) <= 100 &&
+                .stream().filter(item -> getOuterDistanceBetween(obj, item) <= 40 &&
                         item.getGameObjectType() != ObjectTypes.FOOD &&
                         item.getGameObjectType() != ObjectTypes.ASTEROIDFIELD &&
                         item.getGameObjectType() != ObjectTypes.SUPERFOOD &&
@@ -527,7 +527,10 @@ public class BotService {
                                 .sorted(Comparator
                                         .comparing(item -> item.getId()))
                                 .toList();
-
+        
+        if (shortedFoodList.isEmpty()) {
+            return false;
+        }
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = getHeadingBetween(shortedFoodList.get(0));
         return true;
