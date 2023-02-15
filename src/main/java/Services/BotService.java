@@ -12,6 +12,7 @@ public class BotService {
     private GameState gameState;
     private GameObject superbomb;
     private GameObject firedTeleporter;
+    private boolean isTeleporterFired = false; // !CHANGE: Add this
     private boolean firedSuperbomb;
     private HashSet<Effects> currentEffect = new HashSet<Effects>();
     // ADD MORE CONST IF ANY
@@ -92,7 +93,7 @@ public class BotService {
                 System.out.printf("X: %d Y: %d\n", gameState.world.centerPoint.x, gameState.world.centerPoint.y);
             }
 
-            if (this.firedTeleporter == null) {
+            if (this.firedTeleporter == null && isTeleporterFired) {
                 getFiredTeleporter();
             }
 
@@ -106,6 +107,7 @@ public class BotService {
             if (this.firedTeleporter != null && isTeleporterStillAvailable() && isTeleporterNearSmallerEnemy()) {
                 playerAction.setAction(PlayerActions.TELEPORT);
                 this.firedTeleporter = null;
+                this.isTeleporterFired = false;
                 return true;
             }
 
@@ -261,6 +263,7 @@ public class BotService {
 
         if (teleporterList.size() == 0) {
             // System.out.println("No teleport fired.");
+            this.isTeleporterFired = false;
         } else {
             this.firedTeleporter = teleporterList.get(0);
         }
@@ -278,6 +281,7 @@ public class BotService {
         if (teleporterList.isEmpty()) {
             System.out.println((char) 27 + "[01;32m TELEPORTER EXIST MAP\n" + (char) 27 + "[00;00m");
             this.firedTeleporter = null;
+            this.isTeleporterFired = false;
         } else {
             System.out.println("UPDATE TELEPORTER");
             firedTeleporter = teleporterList.get(0);
@@ -294,6 +298,7 @@ public class BotService {
     private boolean isTeleporterNearSmallerEnemy() {
         if (this.firedTeleporter == null) {
             System.out.println("TELEPORTER IS NULL");
+            this.isTeleporterFired = false;
             return false;
         } else {
             System.out.println("IS TELEPORT NEAR SMALLER ENEMY?");
@@ -322,7 +327,7 @@ public class BotService {
      *         dengan menggunakan teleporter
      */
     private boolean fireTeleporter() {
-        if (this.firedTeleporter != null || this.playerAction.action == PlayerActions.FIRETELEPORT) {
+        if (this.isTeleporterFired || this.firedTeleporter != null) {
             return false;
         }
         var playerList = gameState.getPlayerGameObjects()
@@ -336,6 +341,7 @@ public class BotService {
                     System.out.printf("Target is %s\n", currTarget.getId());
                     playerAction.action = PlayerActions.FIRETELEPORT;
                     playerAction.heading = getHeadingBetween(currTarget);
+                    this.isTeleporterFired = true;
                     return true;
                 }
             }
