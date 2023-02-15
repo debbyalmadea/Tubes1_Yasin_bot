@@ -142,11 +142,11 @@ public class BotService {
 
             var nearestTeleporter = getNearestTeleporter();
             if (nearestTeleporter != null
-                    && Math.abs(getHeadingBetween(nearestTeleporter) - nearestTeleporter.currentHeading) >= 90) {
+                    && isObjHeadingUs(nearestTeleporter)) {
                 System.out.println("Avoiding teleporter");
-                playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = getOppositeDirection(bot, nearestTeleporter);
-                return true;
+                if (dodgeObj(nearestTeleporter, 200)) { // RADIUS TELEPORTER UDAH DICEK DI GETNEARESTTELEPORTER
+                    return true;
+                }
             }
 
             GameObject gasCloud = getGasCloudInPath();
@@ -527,6 +527,46 @@ public class BotService {
         return true;
     }
 
+        /**
+     * Mendapatkan makanan terdekat
+     * 
+     * @return true jika terdapat makanan terdekat
+     *         yang dapat dimakan
+     */
+    private boolean computeFoodTarget() {
+        // System.out.println("Compute Food Safe...\n");
+        var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
+        // System.out.println("list gas...\n");
+        System.out.println(listGas);
+        var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
+        // System.out.println("list asteroid...\n");
+        System.out.println(listAst);
+        if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary(bot) > BOUNDRY_RADIUS) {
+            // System.out.println("Food is safe..\n");
+            var foodList = gameState.getGameObjects()
+                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList());
+
+            playerAction.heading = getHeadingBetween(foodList.get(0));
+            return true;
+        } else if (listAst.isEmpty() || listGas.isEmpty()) { // MASIH BELOM FIX AMAN
+            // System.out.println("Food is safe but the distance is longer...\n");
+            var foodList = gameState.getGameObjects()
+                    .stream()
+                    .filter(item -> item.getGameObjectType() == ObjectTypes.FOOD
+                            && getOuterDistanceBetween(bot, item) > 10) // MASIH KIRA2 ALIAS BLM AMAN
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList());
+
+            playerAction.heading = getHeadingBetween(foodList.get(0));
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Mendapatkan super food terdekat
      * !ADVICE kalau bisa object langsung aja dikalkulasi di dalam fungsi ini
@@ -800,7 +840,7 @@ public class BotService {
         }
     }
 
-        /**
+    /**
      * !REMINDER apakah obj bahaya udah dicek di fungsi utama, fokus ke cara
      * dodge, asumsi obj emang bahaya
      * 
