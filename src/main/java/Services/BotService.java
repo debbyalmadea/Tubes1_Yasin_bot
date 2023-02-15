@@ -22,7 +22,7 @@ public class BotService {
     final int SUPERNOVA_RADIUS = 50;
     final int SUPERFOOD_RADIUS = 50;
     final int TORPEDO_RADIUS = 600;
-    final int AVOID_TORPEDO_RADIUS = 100;
+    final int AVOID_TORPEDO_RADIUS = 150;
     final int GASCLOUD_RADIUS = 10;
     final int BOUNDRY_RADIUS = 10;
     final int ASTEROID_RADIUS = 5;
@@ -434,7 +434,7 @@ public class BotService {
                         item.getGameObjectType() != ObjectTypes.SUPERFOOD &&
                         item.getGameObjectType() != ObjectTypes.SUPERNOVAPICKUP)
                 .toList();
-        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= 120;
+        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= bot.getSize() + 40;
     }
 
     /**
@@ -583,7 +583,7 @@ public class BotService {
     private boolean getSuperfood(List<GameObject> object) {
         // System.out.println("Cek Superfood...\n");
         var hasil = object.stream()
-                .filter(item -> item.getGameObjectType() == ObjectTypes.SUPERFOOD)
+                .filter(item -> item.getGameObjectType() == ObjectTypes.SUPERFOOD && !isObjectNearDangerousObject(item))
                 .collect(Collectors.toList());
 
         if (!hasil.isEmpty()) {
