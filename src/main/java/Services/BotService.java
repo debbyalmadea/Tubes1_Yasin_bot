@@ -12,6 +12,7 @@ public class BotService {
     private GameState gameState;
     private GameObject superbomb;
     private GameObject firedTeleporter;
+    private boolean firedSuperbomb;
     private HashSet<Effects> currentEffect = new HashSet<Effects>();
     // ADD MORE CONST IF ANY
     final int SAFETY_NUM = 40;
@@ -53,9 +54,16 @@ public class BotService {
         this.playerAction = playerAction;
     }
 
+    /**
+        Compute next player action
+        @return true jika kalkulasi untuk menentukan aksi selanjutnya 
+        telah selesai
+     */
     public boolean computeNextPlayerAction(PlayerAction playerAction) {
-        playerAction.setAction(PlayerActions.FORWARD);
-        playerAction.setHeading(new Random().nextInt(360));
+        if (playerAction.action == null) {
+            playerAction.setAction(PlayerActions.FORWARD);
+            playerAction.setHeading(new Random().nextInt(360));
+        }
 
         if (!gameState.getGameObjects().isEmpty()) {
             System.out.printf("=====================TICK %d\n", gameState.getWorld().currentTick);
@@ -73,17 +81,26 @@ public class BotService {
             System.out.printf("WORLD RADIUS: %d\n", gameState.getWorld().radius);
             System.out.printf("DISTANCE FROM BOUNDARY: %d\n", distanceFromBoundary);
             System.out.printf("SUPERNOVA: %d\n", supernovaList.size());
+            System.out.printf("SHIELD: %d\n", bot.shieldCount);
+
 
             if (supernovaList.size() > 0) {
                 System.out.printf("DISTANCE FROM SN: %f\n", getDistanceBetween(supernovaList.get(0)));
             }
-            System.out.printf("SHIELD: %d\n", bot.shieldCount);
+
             if (gameState.world.centerPoint != null) {
                 System.out.printf("X: %d Y: %d\n", gameState.world.centerPoint.x, gameState.world.centerPoint.y);
             }
 
             if (this.firedTeleporter == null) {
                 getFiredTeleporter();
+            }
+
+            if (this.firedSuperbomb && isSupernovaNearOtherPlayer()) {
+                System.out.println("Denotate Supernova Bomb");
+                playerAction.setAction(PlayerActions.DETONATESUPERNOVA);
+                firedSuperbomb = false;
+                return true;
             }
 
             if (this.firedTeleporter != null && isTeleporterStillAvailable() && isTeleporterNearSmallerEnemy()) {
@@ -102,12 +119,10 @@ public class BotService {
 
             if (bot.supernovaAvailable > 0) {
                 System.out.println("WE HAVE SUPERNOVA");
-            }
-
-            if (currentEffect.contains(Effects.GASCLOUD)) {
-                System.out.println("GAS CLOUD EFFECTS");
-                moveToCenter();
-                return true;
+                var isAbleToFireSuperbomb = fireSuperbomb();
+                if (isAbleToFireSuperbomb) {
+                    return true;
+                }
             }
 
             if (distanceFromBoundary <= 100) {
@@ -128,6 +143,7 @@ public class BotService {
             var nearestTeleporter = getNearestTeleporter();
             if (nearestTeleporter != null
                     && Math.abs(getHeadingBetween(nearestTeleporter) - nearestTeleporter.currentHeading) >= 90) {
+                System.out.println("Avoiding teleporter");
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getOppositeDirection(bot, nearestTeleporter);
                 return true;
@@ -150,37 +166,36 @@ public class BotService {
             }
 
             List<GameObject> torpedoes = getObjectsWithin(AVOID_TORPEDO_RADIUS, ObjectTypes.TORPEDOSALVO)
-                    .stream().filter(item -> isObjHeadingUs(item))
-                    .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
-                    .toList();
+                                        .stream().filter(item->Math.abs(getHeadingBetween(item) - item.currentHeading) >= 90)
+                                        .sorted(Comparator.comparing(item->getDistanceBetween(item)))
+                                        .toList();
             if (!torpedoes.isEmpty()) {
-                var runTorpedos = dodgeTorpedos(torpedoes.get(0));
-                if (!runTorpedos) {
-                    System.out.println("ADA TORPEDOS TAPI AMAN\n");
-                }
+                System.out.println("Avoiding torpedoes");
+                dodgeTorpedos_alternate(torpedoes.get(0));
                 return true;
             }
 
+            if (!superbombList.isEmpty()) {
+                this.superbomb = superbombList.get(0);
+                var runSuperBomb = dodgeObj(superbomb, SUPERNOVABOMB_RADIUS);
+                if (runSuperBomb) {
+                    System.out.println("Avoiding superbomb");
+                    return true;
+                } 
+            }
+
             var isOffensePossible = fireTeleporter();
-            if (!isOffensePossible) {
-                if (!superbombList.isEmpty()) {
-                    this.superbomb = superbombList.get(0);
-                    var runSuperBomb = dodgeObj(superbomb, SUPERNOVABOMB_RADIUS);
-                    if (!runSuperBomb) {
-                        goToFood();
-                    } else {
-                        System.out.println("ADA SUPERNOVA BAHAYA");
-                    }
-                } else {
-                    // lain
-                    var isAbleToFireTorpedoes = fireTorpedoSalvo();
-                    if (!isAbleToFireTorpedoes) {
-                        goToFood();
-                    }
-                }
+            if (isOffensePossible) {
+                return true;
+            }
+
+            var isAbleToFireTorpedoes = fireTorpedoSalvo();
+            if (!isAbleToFireTorpedoes) {
+                goToFood();
             }
         }
 
+        currentEffect.clear();
         this.playerAction = playerAction;
         return true;
 
@@ -203,14 +218,15 @@ public class BotService {
         Position position = new Position(0, 0);
         GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
         var heading = getHeadingBetween(worldCenter);
-        for (int i = 20; i <= 180; i += 20) {
+        for (int i = 20; i <= 340; i += 20) {
             if (!isHeadingNearDangerousObject(heading)) {
                 break;
             }
+            System.out.println("Heading is dangerous, changing heading");
             heading += i;
         }
         playerAction.setAction(PlayerActions.FORWARD);
-        playerAction.setHeading(getHeadingBetween(worldCenter));
+        playerAction.setHeading(heading % 360);
     }
 
     // TELEPORT MECHANISM
@@ -330,6 +346,45 @@ public class BotService {
     }
 
     // ATTACK MECHANISM
+    private boolean fireSuperbomb() {
+        List<GameObject> playerList = gameState.getPlayerGameObjects()
+                                        .stream().filter(item -> !item.getId().equals(bot.getId()) &&
+                                                        getDistanceBetween(item) >= 250)
+                                        .sorted(Comparator.comparing(item -> item.getSize()))
+                                        .toList();
+        
+        if (playerList.isEmpty()) {
+            return false;
+        }
+
+        playerAction.setAction(PlayerActions.FIRESUPERNOVA);
+        playerAction.setHeading(getHeadingBetween(playerList.get(playerList.size() - 1)));
+        this.firedSuperbomb = true;
+        return true;
+    }
+
+    private boolean isSupernovaNearOtherPlayer() {
+        var supernovaBombList = getSupernovaBomb();
+        if (supernovaBombList.isEmpty()) {
+            System.out.println("Supernova Exist Map");
+            return false;
+        }
+        List<GameObject> playerList = gameState.getPlayerGameObjects()
+                                        .stream().filter(item -> !item.getId().equals(bot.getId()) &&
+                                                        getDistanceBetween(item) >= 250 &&
+                                                        getDistanceBetween(item, supernovaBombList.get(0)) <= 100)
+                                        .toList();
+        
+        if (playerList.isEmpty()) {
+            System.out.println("No Player Near Supernova, getting alternate action");
+            if (getDistanceBoundary(supernovaBombList.get(0)) <= 80) {
+                return true;
+            }
+            return false;
+        }
+
+        return true;
+    }
     /**
      * Menembakkan torpedo salvo
      * 
@@ -352,7 +407,7 @@ public class BotService {
         if (playerList.size() == 0) {
             return false;
         }
-
+        
         int heading = getHeadingBetween(playerList.get(0));
         playerAction.action = PlayerActions.FIRETORPEDOES;
         playerAction.heading = heading;
@@ -367,13 +422,13 @@ public class BotService {
      */
     private boolean isObjectNearDangerousObject(GameObject obj) {
         List<GameObject> dangerousObj = gameState.getGameObjects()
-                .stream().filter(item -> getOuterDistanceBetween(obj, item) <= bot.speed * 2 &&
+                .stream().filter(item -> getOuterDistanceBetween(obj, item) <= 100 &&
                         item.getGameObjectType() != ObjectTypes.FOOD &&
                         item.getGameObjectType() != ObjectTypes.ASTEROIDFIELD &&
                         item.getGameObjectType() != ObjectTypes.SUPERFOOD &&
                         item.getGameObjectType() != ObjectTypes.SUPERNOVAPICKUP)
                 .toList();
-        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= bot.speed + bot.size;
+        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= 120;
     }
 
     /**
@@ -428,51 +483,48 @@ public class BotService {
     private void goToFood() {
         var cekSuperfood = getSuperfood(getObjectsWithin(SUPERFOOD_RADIUS));
         if (!cekSuperfood) {
-            var status = computeFoodTarget();
+            var status = computeFoodTarget_alternate();
             if (!status) {
                 // NANTI ISI ACTION PALING TERAKHIR
+                System.out.println("Can't do anything");
+                playerAction.setAction(PlayerActions.FORWARD);
+                playerAction.setHeading(30);
+            } else {
+                System.out.println("Going for nearest food");
             }
         }
     }
 
     /**
+     * !ALTERNATE DARI FUNGSI computeFoodTarget
      * Mendapatkan makanan terdekat
      * 
      * @return true jika terdapat makanan terdekat
      *         yang dapat dimakan
      */
-    private boolean computeFoodTarget() {
-        // System.out.println("Compute Food Safe...\n");
-        var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
-        // System.out.println("list gas...\n");
-        System.out.println(listGas);
-        var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
-        // System.out.println("list asteroid...\n");
-        System.out.println(listAst);
-        if (listAst.isEmpty() && listGas.isEmpty() && getDistanceBoundary(bot) > BOUNDRY_RADIUS) {
-            // System.out.println("Food is safe..\n");
-            var foodList = gameState.getGameObjects()
-                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
-                    .sorted(Comparator
-                            .comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
+    private boolean computeFoodTarget_alternate() {
+        // var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
+        // var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
+        var foodList = gameState.getGameObjects()
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && !isObjectNearDangerousObject(item))
+                .sorted(Comparator
+                        .comparing(item -> getDistanceBetween(bot, item)))
+                .collect(Collectors.toList());
 
-            playerAction.heading = getHeadingBetween(foodList.get(0));
-            return true;
-        } else if (listAst.isEmpty() || listGas.isEmpty()) { // MASIH BELOM FIX AMAN
-            // System.out.println("Food is safe but the distance is longer...\n");
-            var foodList = gameState.getGameObjects()
-                    .stream()
-                    .filter(item -> item.getGameObjectType() == ObjectTypes.FOOD
-                            && getOuterDistanceBetween(bot, item) > 10) // MASIH KIRA2 ALIAS BLM AMAN
-                    .sorted(Comparator
-                            .comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
-
-            playerAction.heading = getHeadingBetween(foodList.get(0));
-            return true;
+        if (foodList.isEmpty()) {
+            return false;
         }
-        return false;
+
+        var shortedDistance = getDistanceBetween(foodList.get(0));
+
+        var shortedFoodList = foodList.stream().filter(item -> getDistanceBetween(item) == shortedDistance)
+                                .sorted(Comparator
+                                        .comparing(item -> item.getId()))
+                                .toList();
+
+        playerAction.action = PlayerActions.FORWARD;
+        playerAction.heading = getHeadingBetween(shortedFoodList.get(0));
+        return true;
     }
 
     /**
@@ -657,7 +709,7 @@ public class BotService {
      *         dan jaraknya dekat
      */
     private GameObject getDangerousNearPlayer() {
-        List<GameObject> playerNearBot = getPlayersWithin(100)
+        List<GameObject> playerNearBot = getPlayersWithin(160)
                 .stream().filter(item -> !bot.getId().equals(item.getId()))
                 .sorted(Comparator.comparing(item -> item.getSize()))
                 .toList();
@@ -725,6 +777,30 @@ public class BotService {
     }
 
     /**
+     * !ALTERNATE dodgeTorpedos
+     * !REMINDER apakah obj bahaya udah dicek di fungsi utama, fokus ke cara
+     * dodge, asumsi obj emang bahaya
+     * 
+     * @param obj
+     * @return
+     */
+    private void dodgeTorpedos_alternate(GameObject obj) {
+        if (bot.getSize() > 40 && bot.shieldCount > 0) {
+            System.out.println((char) 27 + "[01;32m USESHIELD\n" + (char) 27 + "[00;00m");
+            playerAction.action = PlayerActions.ACTIVATESHIELD;
+        }
+        else if (bot.getSize() > TORPEDO_COST * 5 && bot.torpedoSalvoCount > 0) {
+            System.out.println((char) 27 + "[01;32m TEMBAK BALIK TORPEDOS\n" + (char) 27 + "[00;00m");
+            playerAction.action = PlayerActions.FIRETORPEDOES;
+            playerAction.heading = getHeadingBetween(obj);
+        } else {
+            playerAction.action = PlayerActions.FORWARD;
+            playerAction.heading = getOppositeDirection(bot, obj);
+            System.out.println("Run away from torpedoes");
+        }
+    }
+
+        /**
      * !REMINDER apakah obj bahaya udah dicek di fungsi utama, fokus ke cara
      * dodge, asumsi obj emang bahaya
      * 
@@ -800,7 +876,7 @@ public class BotService {
     private GameObject getGasCloudInPath() {
         List<GameObject> gcList = gameState.getGameObjects()
                 .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD &&
-                        getOuterDistanceBetween(item, bot) <= bot.speed * 3)
+                        getOuterDistanceBetween(item, bot) <= 80)
                 .toList();
         if (gcList.size() > 0) {
             return gcList.get(0);
