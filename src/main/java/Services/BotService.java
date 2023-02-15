@@ -143,10 +143,9 @@ public class BotService {
             }
 
             var nearestTeleporter = getNearestTeleporter();
-            if (nearestTeleporter != null
-                    && isObjHeadingUs(nearestTeleporter)) {
+            if (nearestTeleporter != null) {
                 System.out.println("Avoiding teleporter");
-                if (dodgeObj(nearestTeleporter, 200)) { // RADIUS TELEPORTER UDAH DICEK DI GETNEARESTTELEPORTER
+                if (dodgeObj(nearestTeleporter, 400)) { // RADIUS TELEPORTER UDAH DICEK DI GETNEARESTTELEPORTER
                     return true;
                 }
             }
@@ -237,8 +236,8 @@ public class BotService {
      * @return Mendapatkan object teleporter terdekat
      */
     private GameObject getNearestTeleporter() {
-        var teleporter = getObjectsWithin(200)
-                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER)
+        var teleporter = getObjectsWithin(400)
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TELEPORTER && isObjHeadingUs(item))
                 .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .collect(Collectors.toList());
 
@@ -263,7 +262,6 @@ public class BotService {
 
         if (teleporterList.size() == 0) {
             // System.out.println("No teleport fired.");
-            this.isTeleporterFired = false;
         } else {
             this.firedTeleporter = teleporterList.get(0);
         }
@@ -429,13 +427,13 @@ public class BotService {
      */
     private boolean isObjectNearDangerousObject(GameObject obj) {
         List<GameObject> dangerousObj = gameState.getGameObjects()
-                .stream().filter(item -> getOuterDistanceBetween(obj, item) <= 40 &&
+                .stream().filter(item -> getOuterDistanceBetween(obj, item) <= 25 &&
                         item.getGameObjectType() != ObjectTypes.FOOD &&
                         item.getGameObjectType() != ObjectTypes.ASTEROIDFIELD &&
                         item.getGameObjectType() != ObjectTypes.SUPERFOOD &&
                         item.getGameObjectType() != ObjectTypes.SUPERNOVAPICKUP)
                 .toList();
-        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= bot.getSize() + 40;
+        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= bot.getSize() + 25;
     }
 
     /**
