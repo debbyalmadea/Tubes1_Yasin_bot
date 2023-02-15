@@ -331,7 +331,8 @@ public class BotService {
             return false;
         }
         var playerList = gameState.getPlayerGameObjects()
-                .stream().sorted(Comparator.comparing(item -> getDistanceBetween(item)))
+                .stream().filter(item -> !isObjectNearDangerousObject(item))
+                .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .toList();
         if (playerList.size() > 0 && bot.teleporterCount > 0) {
             for (int i = 0; i < playerList.size(); i++) {
@@ -494,7 +495,7 @@ public class BotService {
                 // NANTI ISI ACTION PALING TERAKHIR
                 System.out.println("Can't do anything");
                 playerAction.setAction(PlayerActions.FORWARD);
-                playerAction.setHeading(30);
+                playerAction.heading = new Random().nextInt(360);
             } else {
                 System.out.println("Going for nearest food");
             }
