@@ -159,24 +159,16 @@ public class BotService {
                 return true;
             }
 
-            GameObject vulnerablePlayer = getVunerableNearPlayer();
-            if (vulnerablePlayer != null) {
-                System.out.println("CHASING VULNERABLE PLAYER");
-                playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = getHeadingBetween(vulnerablePlayer);
-                return true;
-            }
-
             List<GameObject> torpedoes = getObjectsWithin(AVOID_TORPEDO_RADIUS, ObjectTypes.TORPEDOSALVO)
-                                        .stream().filter(item->isObjHeadingUs(item))
-                                        .sorted(Comparator.comparing(item->getDistanceBetween(item)))
-                                        .toList();
+            .stream().filter(item->isObjHeadingUs(item))
+            .sorted(Comparator.comparing(item->getDistanceBetween(item)))
+            .toList();
             if (!torpedoes.isEmpty()) {
                 System.out.println("Avoiding torpedoes");
                 dodgeTorpedos(torpedoes.get(0));
                 return true;
             }
-
+            
             if (!superbombList.isEmpty()) {
                 this.superbomb = superbombList.get(0);
                 var runSuperBomb = dodgeObj(superbomb, SUPERNOVABOMB_RADIUS);
@@ -185,12 +177,20 @@ public class BotService {
                     return true;
                 } 
             }
-
+          
+            GameObject vulnerablePlayer = getVunerableNearPlayer();
+            if (vulnerablePlayer != null) {
+                System.out.println("CHASING VULNERABLE PLAYER");
+                playerAction.action = PlayerActions.FORWARD;
+                playerAction.heading = getHeadingBetween(vulnerablePlayer);
+                return true;
+            }
+            
             var isOffensePossible = fireTeleporter();
             if (isOffensePossible) {
                 return true;
             }
-
+            
             var isAbleToFireTorpedoes = fireTorpedoSalvo();
             if (!isAbleToFireTorpedoes) {
                 goToFood();
