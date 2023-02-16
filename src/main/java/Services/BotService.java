@@ -127,12 +127,6 @@ public class BotService {
                 }
             }
 
-            if (distanceFromBoundary <= bot.getSize() + 20) {
-                System.out.println("TOO CLOSE TO BOUNDARY...MOVING TO CENTER...\n");
-                moveToCenter();
-                return true;
-            }
-
             if (dangerousNearPlayer != null) {
                 System.out.println("WARNING BIGGER BOT");
                 var isAbleToFireTorpedoes = fireTorpedoSalvo();
@@ -141,6 +135,13 @@ public class BotService {
                 }
                 return true;
             }
+
+            if (distanceFromBoundary <= bot.getSize() + 20) {
+                System.out.println("TOO CLOSE TO BOUNDARY...MOVING TO CENTER...\n");
+                moveToCenter();
+                return true;
+            }
+
 
             var nearestTeleporter = getNearestTeleporter();
             if (nearestTeleporter != null) {
@@ -439,7 +440,7 @@ public class BotService {
         }
 
         var playerList = getPlayersWithin(radius)
-                .stream().filter(item -> item.effects < 16 && !item.getId().equals(bot.getId()))
+                .stream().filter(item -> item.effects < 16 && !item.getId().equals(bot.getId()) && item.getSize() > 10)
                 .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .collect(Collectors.toList());
 
@@ -455,6 +456,7 @@ public class BotService {
                 .collect(Collectors.toList());
 
         if (!isObjInBetween_Alternate(objectList,playerList.get(0))) {
+            System.out.println("\n\nTERHALANG OBJEK GAGAL TORPEDO\n\n");
             return false;
         }
 
@@ -827,7 +829,7 @@ public class BotService {
     private void runFromAtt(GameObject atkr) {
         playerAction.action = PlayerActions.FORWARD;
         var distanceFromBoundary = getDistanceBoundary(bot);
-        if (distanceFromBoundary <= bot.getSize() + 30) {
+        if (distanceFromBoundary <= bot.getSize() + 20) {
             if (getHeadingBetween(atkr)<90 || getHeadingBetween(atkr)>270) {
                 playerAction.heading = (int) Math.atan(bot.getPosition().y/bot.getPosition().x) + 90;
             } else {
@@ -939,10 +941,10 @@ public class BotService {
             }
         } else if ((headingObj - getOppositeDirection(obj) % 360 <= 5
                 && headingObj - getOppositeDirection(obj) % 360 >= -5)) {
-            if (bot.getSize() > TORPEDO_COST * 5) {
+            if (bot.getSize() > TORPEDO_COST * 4) {
                 System.out.println((char) 27 + "[01;32m TEMBAK BALIK TORPEDOS\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.FIRETORPEDOES;
-                playerAction.heading = (360 - getOppositeDirection(obj)) % 360;
+                playerAction.heading = getHeadingBetween(obj);
                 return true;
             } else {
                 System.out.println((char) 27 + "[01;31m LARI DARI TORPEDOS\n" + (char) 27 + "[00;00m");
