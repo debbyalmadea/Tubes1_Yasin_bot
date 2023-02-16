@@ -395,7 +395,7 @@ public class BotService {
      * 
      * @return true jika bot dapat menembak torpedo salvo
      */
-    private boolean fireTorpedoSalvo() {
+    private boolean fireTorpedoSalvo_lama() {
         if (bot.torpedoSalvoCount <= 0) {
             return false;
         }
@@ -409,31 +409,60 @@ public class BotService {
                 .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .collect(Collectors.toList());
 
-        var objectList = getObjectsWithin((int) getDistanceBetween(playerList.get(0)))
-                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD || item.getGameObjectType == ObjectTypes.ASTEROIDFIELD)
+        if (playerList.size() == 0) {
+            return false;
+        }
+        
+        int heading = getHeadingBetween(playerList.get(0));
+        playerAction.action = PlayerActions.FIRETORPEDOES;
+        playerAction.heading = heading;
+        System.out.printf("Fired torpedoeeeees...\n");
+        return true;
+    }
+
+    private boolean fireTorpedoSalvo() {
+        int minSize, radius;
+        if (bot.torpedoSalvoCount <= 0) {
+            return false;
+        }
+
+        if (gameState.getPlayerGameObjects().size() == 2) {
+            minSize = TORPEDO_COST * 4;
+            radius = 200;
+        } else {
+            minSize = TORPEDO_COST * 6;
+            radius = 400;
+        }
+
+        if (bot.getSize() < minSize) {
+            return false;
+        }
+
+        var playerList = getPlayersWithin(radius)
+                .stream().filter(item -> item.effects < 16 && !item.getId().equals(bot.getId()))
+                .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .collect(Collectors.toList());
 
         if (playerList.size() == 0) {
             return false;
         }
-        
-        var shoot = true;
-        for (int i = 0; i<objectList.size();i++) {
-            if (isObjInBetween(objectList.get(i), playerList.get(0))) {
-                shoot = false;
-            }
-        }
 
-        if (shoot) {
-            int heading = getHeadingBetween(playerList.get(0));
-            playerAction.action = PlayerActions.FIRETORPEDOES;
-            playerAction.heading = heading;
-            System.out.printf("Fired torpedoeeeees...\n");
-            return true;
-        } else {
-            System.out.printf("Can't shoot, something in between \n");
+        var objectList = getObjectsWithin(radius)
+                .stream().filter(item -> 
+                item.getGameObjectType() == ObjectTypes.GASCLOUD ||
+                item.getGameObjectType() == ObjectTypes.ASTEROIDFIELD ||
+                item.getGameObjectType() == ObjectTypes.WORMHOLE)
+                .collect(Collectors.toList());
+
+        if (!isObjInBetween_Alternate(objectList,playerList.get(0))) {
             return false;
         }
+
+        int heading = getHeadingBetween(playerList.get(0));
+        playerAction.action = PlayerActions.FIRETORPEDOES;
+        playerAction.heading = heading;
+        System.out.printf("Fired torpedoeeeees...\n");
+        return true;
     }
 
     /**
