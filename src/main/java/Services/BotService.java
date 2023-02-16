@@ -993,4 +993,22 @@ public class BotService {
 
 
     }
+
+    private boolean isObjInBetween_Alternate(List<GameObject> LG, GameObject Player){
+        boolean ret = true;
+        for (int i=0; i<LG.size(); i++){
+            double a = getDistanceBetween(bot, LG.get(i));
+            double b = getDistanceBetween(bot, Player);
+            double c = getDistanceBetween(LG.get(i), Player);
+            if (c>b) {
+                continue;
+            } else {
+                double d = a * (Math.sin(Math.acos((a*a + b*b - c*c) / (2*a*b))));
+                if (d < LG.get(i).getSize()) {
+                    return false;
+                }
+            }
+        }
+        return ret;
+    }
 }
