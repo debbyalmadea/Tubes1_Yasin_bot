@@ -409,15 +409,31 @@ public class BotService {
                 .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .collect(Collectors.toList());
 
+        var objectList = getObjectsWithin((int) getDistanceBetween(playerList.get(0)))
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD || item.getGameObjectType == ObjectTypes.ASTEROIDFIELD)
+                .collect(Collectors.toList());
+
         if (playerList.size() == 0) {
             return false;
         }
         
-        int heading = getHeadingBetween(playerList.get(0));
-        playerAction.action = PlayerActions.FIRETORPEDOES;
-        playerAction.heading = heading;
-        System.out.printf("Fired torpedoeeeees...\n");
-        return true;
+        var shoot = true;
+        for (int i = 0; i<objectList.size();i++) {
+            if (isObjInBetween(objectList.get(i), playerList.get(0))) {
+                shoot = false;
+            }
+        }
+
+        if (shoot) {
+            int heading = getHeadingBetween(playerList.get(0));
+            playerAction.action = PlayerActions.FIRETORPEDOES;
+            playerAction.heading = heading;
+            System.out.printf("Fired torpedoeeeees...\n");
+            return true;
+        } else {
+            System.out.printf("Can't shoot, something in between \n");
+            return false;
+        }
     }
 
     /**
@@ -988,7 +1004,7 @@ public class BotService {
         if ((90>ul && ul>0) && (270<ll && ll<360)) {
             return (ul>t && t>0) || (t<360 && t>ll);
         } else {
-            return (ul>t&& t>ll);
+            return (ul>t && t>ll);
         }
 
 
