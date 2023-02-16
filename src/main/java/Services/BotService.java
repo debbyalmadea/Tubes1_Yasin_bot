@@ -103,14 +103,14 @@ public class BotService {
                 firedSuperbomb = false;
                 return true;
             }
-
+            
             if (this.firedTeleporter != null && isTeleporterStillAvailable() && isTeleporterNearSmallerEnemy()) {
                 playerAction.setAction(PlayerActions.TELEPORT);
                 this.firedTeleporter = null;
                 this.isTeleporterFired = false;
                 return true;
             }
-
+            
             var supernova = getSupernova();
             if (supernova != null) {
                 System.out.println("GOING AFTER SUPERNOVA PICKUP");
@@ -127,6 +127,11 @@ public class BotService {
                 }
             }
 
+            var isOffensePossible = fireTeleporter();
+            if (isOffensePossible) {
+                return true;
+            }
+
             if (dangerousNearPlayer != null) {
                 System.out.println("WARNING BIGGER BOT");
                 var isAbleToFireTorpedoes = fireTorpedoSalvo();
@@ -135,8 +140,8 @@ public class BotService {
                 }
                 return true;
             }
-
-            if (distanceFromBoundary <= bot.getSize() + 20) {
+            
+            if (distanceFromBoundary <= 20) {
                 System.out.println("TOO CLOSE TO BOUNDARY...MOVING TO CENTER...\n");
                 moveToCenter();
                 return true;
@@ -152,7 +157,7 @@ public class BotService {
             }
 
             GameObject gasCloud = getGasCloudInPath();
-            if (gasCloud != null && distanceFromBoundary <= bot.speed + bot.getSize() + 40) {
+            if (gasCloud != null && distanceFromBoundary <= bot.speed + 40) {
                 System.out.println("Avoid Gas Cloud");
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getOppositeDirection(gasCloud);
@@ -178,16 +183,11 @@ public class BotService {
                 } 
             }
           
-            GameObject vulnerablePlayer = getVunerableNearPlayer();
+            GameObject vulnerablePlayer = getVulnerableNearPlayer();
             if (vulnerablePlayer != null) {
                 System.out.println("CHASING VULNERABLE PLAYER");
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getHeadingBetween(vulnerablePlayer);
-                return true;
-            }
-            
-            var isOffensePossible = fireTeleporter();
-            if (isOffensePossible) {
                 return true;
             }
             
@@ -473,6 +473,9 @@ public class BotService {
      * @return true jika obj dekat dengan object yang berbahaya
      */
     private boolean isObjectNearDangerousObject(GameObject obj) {
+        if (gameState.getPlayerGameObjects().size()==2) {
+            return false;
+        }
         List<GameObject> dangerousObj = gameState.getGameObjects()
                 .stream().filter(item -> getOuterDistanceBetween(obj, item) <= 25 &&
                         item.getGameObjectType() != ObjectTypes.FOOD &&
@@ -480,7 +483,7 @@ public class BotService {
                         item.getGameObjectType() != ObjectTypes.SUPERFOOD &&
                         item.getGameObjectType() != ObjectTypes.SUPERNOVAPICKUP)
                 .toList();
-        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= bot.getSize() + 25;
+        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <=  25;
     }
 
     /**
@@ -512,7 +515,7 @@ public class BotService {
      * @return player terdekat yang dapat kita makan,
      *         null jika tidak ada
      */
-    private GameObject getVunerableNearPlayer() {
+    private GameObject getVulnerableNearPlayer() {
         List<GameObject> playerNearBot = getPlayersWithin(bot.speed * 8)
                 .stream().sorted(Comparator.comparing(item -> item.getSize()))
                 .toList();
@@ -539,8 +542,8 @@ public class BotService {
             if (!status) {
                 // NANTI ISI ACTION PALING TERAKHIR
                 System.out.println("Can't do anything");
-                playerAction.setAction(PlayerActions.FORWARD);
-                playerAction.heading = new Random().nextInt(360);
+                playerAction.setAction(PlayerActions.STOP);
+                // playerAction.heading = new Random().nextInt(360);
             } else {
                 System.out.println("Going for nearest food");
             }
@@ -577,6 +580,7 @@ public class BotService {
         if (shortedFoodList.isEmpty()) {
             return false;
         }
+        System.out.printf("Chasing %s with distance %d\n", shortedFoodList.get(0), (int) getDistanceBetween(shortedFoodList.get(0)));
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = getHeadingBetween(shortedFoodList.get(0));
         return true;
@@ -803,7 +807,11 @@ public class BotService {
      *         dan jaraknya dekat
      */
     private GameObject getDangerousNearPlayer() {
-        List<GameObject> playerNearBot = getPlayersWithin(160)
+        int radius = 160;
+        if (gameState.getPlayerGameObjects().size() == 2) {
+            radius = 80;
+        }
+        List<GameObject> playerNearBot = getPlayersWithin(radius)
                 .stream().filter(item -> !bot.getId().equals(item.getId()))
                 .sorted(Comparator.comparing(item -> item.getSize()))
                 .toList();
@@ -828,12 +836,14 @@ public class BotService {
      */
     private void runFromAtt(GameObject atkr) {
         playerAction.action = PlayerActions.FORWARD;
+        Position position = new Position(0, 0);
+        GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
         var distanceFromBoundary = getDistanceBoundary(bot);
-        if (distanceFromBoundary <= bot.getSize() + 20) {
+        if (distanceFromBoundary <= 20) {
             if (getHeadingBetween(atkr)<90 || getHeadingBetween(atkr)>270) {
-                playerAction.heading = (int) Math.atan(bot.getPosition().y/bot.getPosition().x) + 90;
+                playerAction.heading = (getHeadingBetween(worldCenter) - 90) % 360;
             } else {
-                playerAction.heading = (int) Math.atan(bot.getPosition().y/bot.getPosition().x) - 90;
+                playerAction.heading = (getHeadingBetween(worldCenter) + 90) % 360;
             }
         } else {
             playerAction.heading = getOppositeDirection(atkr);
