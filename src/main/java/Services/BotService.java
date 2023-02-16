@@ -781,7 +781,16 @@ public class BotService {
      */
     private void runFromAtt(GameObject atkr) {
         playerAction.action = PlayerActions.FORWARD;
-        playerAction.heading = getOppositeDirection(atkr);
+        var distanceFromBoundary = getDistanceBoundary(bot);
+        if (distanceFromBoundary <= bot.getSize() + 30) {
+            if (getHeadingBetween(atkr)<90 || getHeadingBetween(atkr)>270) {
+                playerAction.heading = (int) Math.atan(bot.getPosition().y/bot.getPosition().x) + 90;
+            } else {
+                playerAction.heading = (int) Math.atan(bot.getPosition().y/bot.getPosition().x) - 90;
+            }
+        } else {
+            playerAction.heading = getOppositeDirection(atkr);
+        }
     }
 
     /**
@@ -968,4 +977,20 @@ public class BotService {
         }
     }
 
+    private boolean isObjInBetween(GameObject object, GameObject target) {
+        int t = getHeadingBetween(target);
+        int o = getHeadingBetween(object);
+        double d = getDistanceBetween(object);
+        int r = object.getSize();
+        double th = Math.asin(r/d);
+        int ul = o + (int) th;
+        int ll = o - (int) th;
+        if ((90>ul && ul>0) && (270<ll && ll<360)) {
+            return (ul>t && t>0) || (t<360 && t>ll);
+        } else {
+            return (ul>t&& t>ll);
+        }
+
+
+    }
 }
