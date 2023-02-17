@@ -175,9 +175,7 @@ public class BotService {
             }
 
             GameObject gasCloud = getGasCloudInPath();
-            if (gasCloud != null && distanceFromBoundary <= bot.speed + 20 ||
-                    (bot.effects == 4 || bot.effects == 6 || bot.effects == 12 || bot.effects == 14)
-                            && distanceFromBoundary <= bot.speed + 20) {
+            if (gasCloud != null && distanceFromBoundary <= bot.speed + 20) {
                 System.out.println("Avoid Gas Cloud");
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getOppositeDirection(gasCloud);
@@ -201,8 +199,8 @@ public class BotService {
             }
             
             var isAbleToFireTorpedoes = fireTorpedoSalvo();
-            if (!isAbleToFireTorpedoes) {
-                goToFood();
+            if (isAbleToFireTorpedoes) {
+                return true;
             }    
 
             GameObject vulnerablePlayer = getVulnerableNearPlayer();
@@ -211,7 +209,9 @@ public class BotService {
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getHeadingBetween(vulnerablePlayer);
                 return true;
-            }    
+            } 
+            
+            goToFood();
         }    
         currentEffect.clear();
         this.playerAction = playerAction;
@@ -290,7 +290,7 @@ public class BotService {
      * @return True jika teleporter yang ditembak sedang berada
      *         di dekat musuh yang lebih kecil
      */
-    private boolean isTeleporterNearSmallerEnemy() {
+    private boolean     isTeleporterNearSmallerEnemy() {
         if (this.firedTeleporter == null) {
             System.out.println("TELEPORTER IS NULL");
             this.isTeleporterFired = false;
@@ -381,7 +381,7 @@ public class BotService {
 
         if (playerList.isEmpty()) {
             System.out.println("No Player Near Supernova, getting alternate action");
-            if (getDistanceBoundary(supernovaBombList.get(0)) <= 80) {
+            if (getDistanceBoundary(supernovaBombList.get(0)) <= 150) {
                 return true;
             } else {
                 return false;
@@ -537,7 +537,7 @@ public class BotService {
         if (shortedFoodList.isEmpty()) {
             return false;
         }
-        System.out.printf("Chasing %s with distance %d\n", shortedFoodList.get(0),
+        System.out.printf("Chasing %s with distance %d\n", shortedFoodList.get(0).getId(),
                 (int) getDistanceBetween(shortedFoodList.get(0)));
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = getHeadingBetween(shortedFoodList.get(0));
