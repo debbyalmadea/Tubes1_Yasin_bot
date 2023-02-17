@@ -157,7 +157,8 @@ public class BotService {
             }
 
             GameObject gasCloud = getGasCloudInPath();
-            if (gasCloud != null && distanceFromBoundary <= bot.speed + 40) {
+            if (gasCloud != null && distanceFromBoundary <= bot.speed + 20 || 
+            (bot.effects == 4 || bot.effects == 6 || bot.effects == 12 || bot.effects == 14) && distanceFromBoundary <= bot.speed + 20) {
                 System.out.println("Avoid Gas Cloud");
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getOppositeDirection(gasCloud);
@@ -307,10 +308,10 @@ public class BotService {
                     .collect(Collectors.toList());
 
             for (int i = 0; i < playerList.size(); i++) {
-                var dist = getDistanceBetween(playerList.get(i), firedTeleporter);
+                var dist = getOuterDistanceBetween(playerList.get(i), firedTeleporter);
                 System.out.printf("%s SIZE: %d\n", playerList.get(i).getId(), playerList.get(i).getSize());
                 System.out.printf("%s DISTANCE: %f\n", playerList.get(i).getId(), dist);
-                if (dist <= TELEPORT_SPEED * 3 + (bot.getSize() / 2) && playerList.get(i).getSize() < bot.getSize()) {
+                if (dist <= TELEPORT_SPEED * 3 + (bot.getSize() - 20) && playerList.get(i).getSize() + 10 < bot.getSize()) {
                     System.out.println("IT IS");
                     return true;
                 }
