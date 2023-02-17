@@ -484,7 +484,7 @@ public class BotService {
      */
     private GameObject getVulnerableNearPlayer() {
         List<GameObject> playerNearBot = getPlayersWithin(bot.speed * 8)
-                .stream().sorted(Comparator.comparing(item -> item.getSize()))
+                .stream().sorted(Comparator.comparing(item -> getDistanceBetween(item)))
                 .toList();
         if (playerNearBot.size() <= 1) {
             return null;
