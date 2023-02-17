@@ -31,9 +31,9 @@ Dalam permainan Galaxio, tujuan setiap _bot_ adalah untuk bertahan hidup sampai 
 │           ├───Models
 │           └───Services
 ├───doc
-|   └─── Yasin_bot.pdf
-|
-|
+│   └─── Yasin_bot.pdf
+│
+│
 └───target
     ├───classes
     │   ├───Enums
