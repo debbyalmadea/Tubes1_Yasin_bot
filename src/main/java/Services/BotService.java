@@ -56,9 +56,10 @@ public class BotService {
     }
 
     /**
-        Compute next player action
-        @return true jika kalkulasi untuk menentukan aksi selanjutnya 
-        telah selesai
+     * Compute next player action
+     * 
+     * @return true jika kalkulasi untuk menentukan aksi selanjutnya
+     *         telah selesai
      */
     public boolean computeNextPlayerAction(PlayerAction playerAction) {
         if (playerAction.action == null) {
@@ -84,7 +85,6 @@ public class BotService {
             System.out.printf("SUPERNOVA: %d\n", supernovaList.size());
             System.out.printf("SHIELD: %d\n", bot.shieldCount);
 
-
             if (supernovaList.size() > 0) {
                 System.out.printf("DISTANCE FROM SN: %f\n", getDistanceBetween(supernovaList.get(0)));
             }
@@ -103,14 +103,14 @@ public class BotService {
                 firedSuperbomb = false;
                 return true;
             }
-            
+
             if (this.firedTeleporter != null && isTeleporterStillAvailable() && isTeleporterNearSmallerEnemy()) {
                 playerAction.setAction(PlayerActions.TELEPORT);
                 this.firedTeleporter = null;
                 this.isTeleporterFired = false;
                 return true;
             }
-            
+
             var supernova = getSupernova();
             if (supernova != null) {
                 System.out.println("GOING AFTER SUPERNOVA PICKUP");
@@ -140,25 +140,24 @@ public class BotService {
                 }
                 return true;
             }
-            
+
             if (distanceFromBoundary <= 20) {
                 System.out.println("TOO CLOSE TO BOUNDARY...MOVING TO CENTER...\n");
                 moveToCenter();
                 return true;
             }
 
-
             var nearestTeleporter = getNearestTeleporter();
             if (nearestTeleporter != null) {
                 System.out.println("Avoiding teleporter");
-                if (dodgeObj(nearestTeleporter, 400)) { // RADIUS TELEPORTER UDAH DICEK DI GETNEARESTTELEPORTER
-                    return true;
-                }
+                dodgeObj(nearestTeleporter);
+                return true;
             }
 
             GameObject gasCloud = getGasCloudInPath();
-            if (gasCloud != null && distanceFromBoundary <= bot.speed + 20 || 
-            (bot.effects == 4 || bot.effects == 6 || bot.effects == 12 || bot.effects == 14) && distanceFromBoundary <= bot.speed + 20) {
+            if (gasCloud != null && distanceFromBoundary <= bot.speed + 20 ||
+                    (bot.effects == 4 || bot.effects == 6 || bot.effects == 12 || bot.effects == 14)
+                            && distanceFromBoundary <= bot.speed + 20) {
                 System.out.println("Avoid Gas Cloud");
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getOppositeDirection(gasCloud);
@@ -166,24 +165,21 @@ public class BotService {
             }
 
             List<GameObject> torpedoes = getObjectsWithin(AVOID_TORPEDO_RADIUS, ObjectTypes.TORPEDOSALVO)
-            .stream().filter(item->isObjHeadingUs(item))
-            .sorted(Comparator.comparing(item->getDistanceBetween(item)))
-            .toList();
+                    .stream().filter(item -> isObjHeadingUs(item))
+                    .sorted(Comparator.comparing(item -> getDistanceBetween(item)))
+                    .toList();
             if (!torpedoes.isEmpty()) {
                 System.out.println("Avoiding torpedoes");
                 dodgeTorpedos(torpedoes.get(0));
                 return true;
             }
-            
+
             if (!superbombList.isEmpty()) {
-                this.superbomb = superbombList.get(0);
-                var runSuperBomb = dodgeObj(superbomb, SUPERNOVABOMB_RADIUS);
-                if (runSuperBomb) {
-                    System.out.println("Avoiding superbomb");
-                    return true;
-                } 
+                dodgeObj(superbomb);
+                System.out.println("Avoiding superbomb");
+                return true;
             }
-          
+
             GameObject vulnerablePlayer = getVulnerableNearPlayer();
             if (vulnerablePlayer != null) {
                 System.out.println("CHASING VULNERABLE PLAYER");
@@ -191,7 +187,7 @@ public class BotService {
                 playerAction.heading = getHeadingBetween(vulnerablePlayer);
                 return true;
             }
-            
+
             var isAbleToFireTorpedoes = fireTorpedoSalvo();
             if (!isAbleToFireTorpedoes) {
                 goToFood();
@@ -311,7 +307,8 @@ public class BotService {
                 var dist = getOuterDistanceBetween(playerList.get(i), firedTeleporter);
                 System.out.printf("%s SIZE: %d\n", playerList.get(i).getId(), playerList.get(i).getSize());
                 System.out.printf("%s DISTANCE: %f\n", playerList.get(i).getId(), dist);
-                if (dist <= TELEPORT_SPEED * 3 + (bot.getSize() - 20) && playerList.get(i).getSize() + 10 < bot.getSize()) {
+                if (dist <= TELEPORT_SPEED * 3 + (bot.getSize() - 20)
+                        && playerList.get(i).getSize() + 10 < bot.getSize()) {
                     System.out.println("IT IS");
                     return true;
                 }
@@ -355,11 +352,11 @@ public class BotService {
     // ATTACK MECHANISM
     private boolean fireSuperbomb() {
         List<GameObject> playerList = gameState.getPlayerGameObjects()
-                                        .stream().filter(item -> !item.getId().equals(bot.getId()) &&
-                                                        getDistanceBetween(item) >= 250)
-                                        .sorted(Comparator.comparing(item -> item.getSize()))
-                                        .toList();
-        
+                .stream().filter(item -> !item.getId().equals(bot.getId()) &&
+                        getDistanceBetween(item) >= 250)
+                .sorted(Comparator.comparing(item -> item.getSize()))
+                .toList();
+
         if (playerList.isEmpty()) {
             return false;
         }
@@ -377,11 +374,11 @@ public class BotService {
             return false;
         }
         List<GameObject> playerList = gameState.getPlayerGameObjects()
-                                        .stream().filter(item -> !item.getId().equals(bot.getId()) &&
-                                                        getDistanceBetween(item) >= 250 &&
-                                                        getDistanceBetween(item, supernovaBombList.get(0)) <= 100)
-                                        .toList();
-        
+                .stream().filter(item -> !item.getId().equals(bot.getId()) &&
+                        getDistanceBetween(item) >= 250 &&
+                        getDistanceBetween(item, supernovaBombList.get(0)) <= 100)
+                .toList();
+
         if (playerList.isEmpty()) {
             System.out.println("No Player Near Supernova, getting alternate action");
             if (getDistanceBoundary(supernovaBombList.get(0)) <= 80) {
@@ -392,6 +389,7 @@ public class BotService {
 
         return true;
     }
+
     /**
      * Menembakkan torpedo salvo
      * 
@@ -414,7 +412,7 @@ public class BotService {
         if (playerList.size() == 0) {
             return false;
         }
-        
+
         int heading = getHeadingBetween(playerList.get(0));
         playerAction.action = PlayerActions.FIRETORPEDOES;
         playerAction.heading = heading;
@@ -450,13 +448,12 @@ public class BotService {
         }
 
         var objectList = getObjectsWithin(radius)
-                .stream().filter(item -> 
-                item.getGameObjectType() == ObjectTypes.GASCLOUD ||
-                item.getGameObjectType() == ObjectTypes.ASTEROIDFIELD ||
-                item.getGameObjectType() == ObjectTypes.WORMHOLE)
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD ||
+                        item.getGameObjectType() == ObjectTypes.ASTEROIDFIELD ||
+                        item.getGameObjectType() == ObjectTypes.WORMHOLE)
                 .collect(Collectors.toList());
 
-        if (!isObjInBetween_Alternate(objectList,playerList.get(0))) {
+        if (!isObjInBetween_Alternate(objectList, playerList.get(0))) {
             System.out.println("\n\nTERHALANG OBJEK GAGAL TORPEDO\n\n");
             return false;
         }
@@ -474,7 +471,7 @@ public class BotService {
      * @return true jika obj dekat dengan object yang berbahaya
      */
     private boolean isObjectNearDangerousObject(GameObject obj) {
-        if (gameState.getPlayerGameObjects().size()==2) {
+        if (gameState.getPlayerGameObjects().size() == 2) {
             return false;
         }
         List<GameObject> dangerousObj = gameState.getGameObjects()
@@ -484,7 +481,7 @@ public class BotService {
                         item.getGameObjectType() != ObjectTypes.SUPERFOOD &&
                         item.getGameObjectType() != ObjectTypes.SUPERNOVAPICKUP)
                 .toList();
-        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <=  25;
+        return !dangerousObj.isEmpty() || getDistanceBoundary(obj) <= 25;
     }
 
     /**
@@ -562,7 +559,8 @@ public class BotService {
         // var listGas = getGasCloudWithin(getObjectsWithin(GASCLOUD_RADIUS));
         // var listAst = getAsteroidWithin(getObjectsWithin(ASTEROID_RADIUS));
         var foodList = gameState.getGameObjects()
-                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && !isObjectNearDangerousObject(item))
+                .stream()
+                .filter(item -> item.getGameObjectType() == ObjectTypes.FOOD && !isObjectNearDangerousObject(item))
                 .sorted(Comparator
                         .comparing(item -> getDistanceBetween(bot, item)))
                 .collect(Collectors.toList());
@@ -574,20 +572,21 @@ public class BotService {
         var shortedDistance = (int) getDistanceBetween(foodList.get(0));
 
         var shortedFoodList = foodList.stream().filter(item -> ((int) getDistanceBetween(item)) == shortedDistance)
-                                .sorted(Comparator
-                                        .comparing(item -> item.getId()))
-                                .toList();
-        
+                .sorted(Comparator
+                        .comparing(item -> item.getId()))
+                .toList();
+
         if (shortedFoodList.isEmpty()) {
             return false;
         }
-        System.out.printf("Chasing %s with distance %d\n", shortedFoodList.get(0), (int) getDistanceBetween(shortedFoodList.get(0)));
+        System.out.printf("Chasing %s with distance %d\n", shortedFoodList.get(0),
+                (int) getDistanceBetween(shortedFoodList.get(0)));
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = getHeadingBetween(shortedFoodList.get(0));
         return true;
     }
 
-        /**
+    /**
      * Mendapatkan makanan terdekat
      * 
      * @return true jika terdapat makanan terdekat
@@ -841,7 +840,7 @@ public class BotService {
         GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
         var distanceFromBoundary = getDistanceBoundary(bot);
         if (distanceFromBoundary <= 20) {
-            if (getHeadingBetween(atkr)<90 || getHeadingBetween(atkr)>270) {
+            if (getHeadingBetween(atkr) < 90 || getHeadingBetween(atkr) > 270) {
                 playerAction.heading = (getHeadingBetween(worldCenter) - 90) % 360;
             } else {
                 playerAction.heading = (getHeadingBetween(worldCenter) + 90) % 360;
@@ -857,37 +856,12 @@ public class BotService {
      * 
      * 
      * @param obj
-     * @param radius
      * @return Menghindar dari obj
      */
-    private boolean dodgeObj(GameObject obj, int radius) {
-        var headingObj = obj.currentHeading;
-
-        if ((headingObj - getOppositeDirection(obj) % 360 >= 0
-                && headingObj - getOppositeDirection(obj) % 360 < 60)) {
-            if (getDistanceBetween(obj) < radius) {
-                System.out.println((char) 27 + "[01;32m LARI-LARI-LARI-LARI\n" + (char) 27 + "[00;00m");
-                playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(obj) - 90 + headingObj) % 360;
-                return true;
-            } else {
-                System.out.println((char) 27 + "[01;31m AMAN DARI SERANGAN\n" + (char) 27 + "[00;00m");
-                return true;
-            }
-        } else if ((headingObj - getOppositeDirection(obj) % 360 < 0
-                && headingObj - getOppositeDirection(obj) % 360 > -60)) {
-            if (getDistanceBetween(obj) < radius) {
-                System.out.println((char) 27 + "[01;31m LARI-LARI-LARI-LARI\n" + (char) 27 + "[00;00m");
-                playerAction.action = PlayerActions.FORWARD;
-                playerAction.heading = (getOppositeDirection(obj) + 90 - headingObj) % 360;
-                return true;
-            } else {
-                System.out.println((char) 27 + "[01;32m AMAN DARI\n" + (char) 27 + "[00;00m");
-                return true;
-            }
-        } else {
-            return false;
-        }
+    private void dodgeObj(GameObject obj) {
+        System.out.println((char) 27 + "[01;32m LARI-LARI-LARI-LARI\n" + (char) 27 + "[00;00m");
+        playerAction.action = PlayerActions.FORWARD;
+        playerAction.heading = (getOppositeDirection(obj) - 90) % 360;
     }
 
     /**
@@ -902,8 +876,7 @@ public class BotService {
         if (bot.getSize() > 40 && bot.shieldCount > 0) {
             System.out.println((char) 27 + "[01;32m USESHIELD\n" + (char) 27 + "[00;00m");
             playerAction.action = PlayerActions.ACTIVATESHIELD;
-        }
-        else if (bot.getSize() > TORPEDO_COST * 5 && bot.torpedoSalvoCount > 0) {
+        } else if (bot.getSize() > TORPEDO_COST * 5 && bot.torpedoSalvoCount > 0) {
             System.out.println((char) 27 + "[01;32m TEMBAK BALIK TORPEDOS\n" + (char) 27 + "[00;00m");
             playerAction.action = PlayerActions.FIRETORPEDOES;
             playerAction.heading = getHeadingBetween(obj);
@@ -926,7 +899,7 @@ public class BotService {
 
         if ((headingObj - getOppositeDirection(obj) % 360 > 5
                 && headingObj - getOppositeDirection(obj) % 360 < 30)) {
-            if (bot.getSize() > 40  && bot.shieldCount > 0) {
+            if (bot.getSize() > 40 && bot.shieldCount > 0) {
                 System.out.println((char) 27 + "[01;32m USESHIELD\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
                 playerAction.heading = (getOppositeDirection(obj) - 90 + headingObj) % 360;
@@ -939,7 +912,7 @@ public class BotService {
             }
         } else if ((headingObj - getOppositeDirection(obj) % 360 < -5
                 && headingObj - getOppositeDirection(obj) % 360 > -30)) {
-            if (bot.getSize() > 40  && bot.shieldCount > 0) {
+            if (bot.getSize() > 40 && bot.shieldCount > 0) {
                 System.out.println((char) 27 + "[01;32m USESHIELD\n" + (char) 27 + "[00;00m");
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
                 playerAction.heading = (getOppositeDirection(obj) + 90 - headingObj) % 360;
@@ -1040,28 +1013,27 @@ public class BotService {
         int o = getHeadingBetween(object);
         double d = getDistanceBetween(object);
         int r = object.getSize();
-        double th = Math.asin(r/d);
+        double th = Math.asin(r / d);
         int ul = o + (int) th;
         int ll = o - (int) th;
-        if ((90>ul && ul>0) && (270<ll && ll<360)) {
-            return (ul>t && t>0) || (t<360 && t>ll);
+        if ((90 > ul && ul > 0) && (270 < ll && ll < 360)) {
+            return (ul > t && t > 0) || (t < 360 && t > ll);
         } else {
-            return (ul>t && t>ll);
+            return (ul > t && t > ll);
         }
-
 
     }
 
-    private boolean isObjInBetween_Alternate(List<GameObject> LG, GameObject Player){
+    private boolean isObjInBetween_Alternate(List<GameObject> LG, GameObject Player) {
         boolean ret = true;
-        for (int i=0; i<LG.size(); i++){
+        for (int i = 0; i < LG.size(); i++) {
             double a = getDistanceBetween(bot, LG.get(i));
             double b = getDistanceBetween(bot, Player);
             double c = getDistanceBetween(LG.get(i), Player);
-            if (c>b) {
+            if (c > b) {
                 continue;
             } else {
-                double d = a * (Math.sin(Math.acos((a*a + b*b - c*c) / (2*a*b))));
+                double d = a * (Math.sin(Math.acos((a * a + b * b - c * c) / (2 * a * b))));
                 if (d < LG.get(i).getSize()) {
                     return false;
                 }
