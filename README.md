@@ -22,7 +22,30 @@ Dalam permainan Galaxio, tujuan setiap _bot_ adalah untuk bertahan hidup sampai 
 
 ## Struktur Program
 ```bash
-
+├───.github
+│   └───workflows
+├───src
+│   └───main
+│       └───java
+│           ├───Enums
+│           ├───Models
+│           └───Services
+├───doc
+│   └─── Yasin_bot.pdf
+│
+│
+└───target
+    ├───classes
+    │   ├───Enums
+    │   ├───Models
+    │   └───Services
+    ├───libs
+    ├───maven-archiver
+    ├───maven-status
+    │   └───maven-compiler-plugin
+    │       └───compile
+    │           └───default-compile
+    └───test-classes
 ```
 
 ## Requirement Program
