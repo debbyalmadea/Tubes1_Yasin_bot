@@ -12,7 +12,7 @@ public class BotService {
     private GameState gameState;
     private GameObject superbomb;
     private GameObject firedTeleporter;
-    private boolean isTeleporterFired = false; // !CHANGE: Add this
+    private boolean isTeleporterFired = false;
     private boolean firedSuperbomb;
     private HashSet<Effects> currentEffect = new HashSet<Effects>();
     // ADD MORE CONST IF ANY
@@ -104,7 +104,6 @@ public class BotService {
             System.out.printf("DISTANCE FROM BOUNDARY: %d\n", distanceFromBoundary);
             System.out.printf("SUPERNOVA: %d\n", supernovaList.size());
             System.out.printf("SHIELD: %d\n", bot.shieldCount);
-
 
             if (supernovaList.size() > 0) {
                 System.out.printf("DISTANCE FROM SN: %f\n", getDistanceBetween(supernovaList.get(0)));
@@ -200,6 +199,11 @@ public class BotService {
                 System.out.println("Avoiding superbomb");
                 return true;
             }
+            
+            var isAbleToFireTorpedoes = fireTorpedoSalvo();
+            if (!isAbleToFireTorpedoes) {
+                goToFood();
+            }    
 
             GameObject vulnerablePlayer = getVulnerableNearPlayer();
             if (vulnerablePlayer != null) {
@@ -208,25 +212,19 @@ public class BotService {
                 playerAction.heading = getHeadingBetween(vulnerablePlayer);
                 return true;
             }    
-            
-            var isAbleToFireTorpedoes = fireTorpedoSalvo();
-            if (!isAbleToFireTorpedoes) {
-                goToFood();
-            }    
         }    
-
         currentEffect.clear();
         this.playerAction = playerAction;
         return true;
     }    
-
 
     /**
      * Mengeset heading menuju world center game
      */
     private void moveToCenter() {
         Position position = new Position(0, 0);
-        GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
+        GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, 
+            ObjectTypes.FOOD, 0, 0, 0, 0, 0);
         var heading = getHeadingBetween(worldCenter);
         for (int i = 20; i <= 340; i += 20) {
             if (!isHeadingNearDangerousObject(heading)) {
@@ -619,7 +617,6 @@ public class BotService {
         var superbomb = gameState.getGameObjects()
                 .stream().filter(item -> item.getGameObjectType() == ObjectTypes.SUPERNOVABOMB)
                 .collect(Collectors.toList());
-
         if (!superbomb.isEmpty()) {
             return superbomb;
         }
@@ -703,7 +700,9 @@ public class BotService {
     private void runFromAtt(GameObject atkr) {
         playerAction.action = PlayerActions.FORWARD;
         Position position = new Position(0, 0);
-        GameObject worldCenter = new GameObject(bot.getId(), 0, 0, 0, position, ObjectTypes.FOOD, 0, 0, 0, 0, 0);
+        GameObject worldCenter = new GameObject(bot.getId(), 
+            0, 0, 0, position, ObjectTypes.FOOD, 
+                0, 0, 0, 0, 0);
         var distanceFromBoundary = getDistanceBoundary(bot);
         if (distanceFromBoundary <= 20) {
             if (getHeadingBetween(atkr) < 90 || getHeadingBetween(atkr) > 270) {
@@ -841,7 +840,6 @@ public class BotService {
     }
 
     /**
-     * 
      * @param LG List GameObject
      * @param Player OtherPlayer
      * @return true jika ada object lain diantara bot dengan otherPlayer
